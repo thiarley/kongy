@@ -785,6 +785,7 @@ export class UI {
             const [fieldName, meta] = Object.entries(fieldObj)[0] as [string, any] || [null, null];
             if (!fieldName || !meta) return;
             if (meta.auto === true) return;
+            if (['consumer', 'route', 'service', 'protocols', 'enabled', 'id', 'created_at', 'run_on', 'ordering'].includes(fieldName)) return;
 
             const currentValue = plugin?.config?.[fieldName] ?? meta.default ?? '';
             const required = meta.required ? '<span class="text-danger">*</span>' : '';

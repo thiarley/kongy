@@ -13,11 +13,24 @@ export async function populatePluginSelect() {
     const select = document.getElementById('pluginSelect') as HTMLSelectElement;
     if (!select) return;
 
+    // Get context
+    const modal = document.getElementById('pluginsModal');
+    const entityType = modal?.dataset.entityType;
+
     select.innerHTML = '<option value="">Selecione um plugin...</option>';
 
     try {
         const { enabled_plugins } = await api.getAvailablePlugins();
-        (enabled_plugins || []).forEach((p: string) => {
+
+        let plugins = enabled_plugins || [];
+
+        // Filter out Auth plugins for Consumers
+        if (entityType === 'consumer') {
+            const forbidden = ['key-auth', 'basic-auth', 'jwt', 'oauth2', 'hmac-auth', 'ldap-auth', 'session'];
+            plugins = plugins.filter((p: string) => !forbidden.includes(p));
+        }
+
+        plugins.forEach((p: string) => {
             const opt = document.createElement('option');
             opt.value = p;
             opt.text = `${getPluginIcon(p)} ${p}`;
@@ -206,13 +219,15 @@ export async function handleSavePluginConfig(ui: UI) {
         else if (entityType === 'service') payload.service = { id: entityId };
         else if (entityType === 'consumer') payload.consumer = { id: entityId };
 
+        // Sanitize config - potentially leaked system fields
+        const forbidden = ['consumer', 'route', 'service', 'id', 'created_at', 'updated_at', 'enabled', 'run_on', 'protocols'];
+        if (payload.config) {
+            forbidden.forEach(k => delete payload.config[k]);
+        }
+
         try {
-            if (entityType === 'consumer') {
-                // Use specific endpoint for consumers to avoid schema issues
-                await api.createConsumerPlugin(entityId, payload.name, payload.config);
-            } else {
-                await api.createPlugin(payload);
-            }
+            await api.createPlugin(payload);
+
             showToast('Plugin criado', 'success');
             ui.closeModal('pluginConfigModal');
 
@@ -228,6 +243,7 @@ export async function handleSavePluginConfig(ui: UI) {
                 import('./ConsumersView').then(m => m.loadConsumerPlugins(entityId));
             }
         } catch (e: any) {
+            console.error(e);
             showToast(e.message, 'error');
         }
     } else {

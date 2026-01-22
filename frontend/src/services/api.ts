@@ -213,7 +213,8 @@ class API {
     async createConsumerPlugin(consumerId: string, pluginName: string, config = {}) {
         return this.fetchKong(METHODS.POST, `/consumers/${consumerId}/plugins`, {
             name: pluginName,
-            config
+            config,
+            enabled: true
         });
     }
 
