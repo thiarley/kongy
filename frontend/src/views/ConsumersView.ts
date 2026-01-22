@@ -3,6 +3,7 @@
  * Handles consumer listing, details, credentials, ACLs and plugins
  */
 import { api } from '../services/api';
+import { i18n } from '../services/i18n';
 import { UI } from '../ui';
 import { showToast } from '../utils';
 import { confirmAction } from './shared';
@@ -24,7 +25,7 @@ export async function loadConsumersView(ui: UI, callbacks: ConsumersViewCallback
         const data = await api.getConsumers();
         ui.renderConsumers(data.data || []);
     } catch (e: any) {
-        showToast('Erro consumers: ' + e.message, 'error');
+        showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
     }
 }
 
@@ -64,7 +65,7 @@ export async function loadConsumerDetails(ui: UI, consumer: any, callbacks: Cons
 
 export async function loadConsumerAcls(consumerId: string) {
     const tbody = document.querySelector('#consumerAclTable tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Carregando...</td></tr>';
+    if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">${i18n.t('messages.loading')}</td></tr>`;
 
     try {
         const res = await api.getConsumerAcls(consumerId);
@@ -72,7 +73,7 @@ export async function loadConsumerAcls(consumerId: string) {
 
         if (tbody) {
             if (acls.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum grupo</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">${i18n.t('messages.no_data')}</td></tr>`;
             } else {
                 tbody.innerHTML = acls.map((acl: any) => `
                     <tr>
@@ -99,7 +100,7 @@ export async function loadConsumerAcls(consumerId: string) {
 
                 tbody.querySelectorAll('.acl-delete-btn').forEach((btn: any) => {
                     btn.onclick = async () => {
-                        if (await confirmAction(`Remover grupo ${btn.dataset.group}?`)) {
+                        if (await confirmAction(i18n.t('consumers.acls.delete_confirm', { group: btn.dataset.group }))) {
                             await api.deleteConsumerAcl(consumerId, btn.dataset.id);
                             loadConsumerAcls(consumerId);
                         }
@@ -108,13 +109,13 @@ export async function loadConsumerAcls(consumerId: string) {
             }
         }
     } catch (e) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="text-danger">Erro ao carregar</td></tr>';
+        if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="text-danger">${i18n.t('messages.error')}</td></tr>`;
     }
 }
 
 export async function loadConsumerCredentials(consumerId: string, type: string, ui?: UI) { // ui optional
     const tbody = document.querySelector('#consumerCredentialsTable tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Carregando...</td></tr>';
+    if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">${i18n.t('messages.loading')}</td></tr>`;
 
     try {
         const res = await api.getConsumerCredentials(consumerId, type);
@@ -122,7 +123,7 @@ export async function loadConsumerCredentials(consumerId: string, type: string, 
 
         if (tbody) {
             if (creds.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhuma credencial</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">${i18n.t('consumers.credentials.empty')}</td></tr>`;
             } else {
                 tbody.innerHTML = creds.map((c: any) => {
                     let detail = c.key || c.username || c.id;
@@ -158,14 +159,14 @@ export async function loadConsumerCredentials(consumerId: string, type: string, 
                             modal.dataset.mode = 'edit';
                             ui.openModal('credentialModal');
                             const title = document.getElementById('credentialModalTitle');
-                            if (title) title.innerText = `Editar Credencial (${type})`;
+                            if (title) title.innerText = `${i18n.t('actions.edit')} Credencial (${type})`;
                         }
                     };
                 });
 
                 tbody.querySelectorAll('.cred-delete-btn').forEach((btn: any) => {
                     btn.onclick = async () => {
-                        if (await confirmAction('Remover credencial?')) {
+                        if (await confirmAction(i18n.t('consumers.credentials.delete_confirm'))) {
                             await api.deleteConsumerCredential(consumerId, type, btn.dataset.id);
                             loadConsumerCredentials(consumerId, type, ui);
                         }
@@ -174,26 +175,26 @@ export async function loadConsumerCredentials(consumerId: string, type: string, 
             }
         }
     } catch (e) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="text-danger">Erro ao carregar</td></tr>';
+        if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="text-danger">${i18n.t('messages.error')}</td></tr>`;
     }
 }
 
 export async function loadConsumerPlugins(consumerId: string) {
     const tbody = document.querySelector('#consumerPluginsTable tbody');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Carregando...</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">${i18n.t('messages.loading')}</td></tr>`;
 
     try {
         const res = await api.getConsumerPlugins(consumerId);
         const plugins = res.data || [];
 
         if (plugins.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nenhum plugin</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">${i18n.t('plugins.no_plugins')}</td></tr>`;
         } else {
             tbody.innerHTML = plugins.map((p: any) => `
                 <tr>
                     <td><span class="badge badge-primary">${p.name}</span></td>
-                    <td><span class="badge ${p.enabled ? 'badge-success' : 'badge-warning'}">${p.enabled ? 'Ativo' : 'Inativo'}</span></td>
+                    <td><span class="badge ${p.enabled ? 'badge-success' : 'badge-warning'}">${p.enabled ? i18n.t('plugins.enabled') : i18n.t('plugins.disabled')}</span></td>
                     <td>${new Date(p.created_at * 1000).toLocaleDateString()}</td>
                     <td>
                         <button class="btn-icon text-primary plugin-toggle-btn" data-id="${p.id}" data-enabled="${p.enabled}">
@@ -212,7 +213,7 @@ export async function loadConsumerPlugins(consumerId: string) {
                     try {
                         await api.updatePlugin(btn.dataset.id, { enabled: !enabled });
                         loadConsumerPlugins(consumerId);
-                        showToast(enabled ? 'Plugin desativado' : 'Plugin ativado', 'success');
+                        showToast(enabled ? i18n.t('plugins.toggle_off') : i18n.t('plugins.toggle_on'), 'success');
                     } catch (e: any) {
                         showToast(e.message, 'error');
                     }
@@ -221,16 +222,16 @@ export async function loadConsumerPlugins(consumerId: string) {
 
             tbody.querySelectorAll('.plugin-delete-btn').forEach((btn: any) => {
                 btn.onclick = async () => {
-                    if (await confirmAction('Remover plugin?')) {
+                    if (await confirmAction(i18n.t('plugins.delete_confirm'))) {
                         await api.deletePlugin(btn.dataset.id);
                         loadConsumerPlugins(consumerId);
-                        showToast('Plugin removido', 'success');
+                        showToast(i18n.t('plugins.delete_success'), 'success');
                     }
                 };
             });
         }
     } catch (e: any) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-danger">Erro ao carregar plugins</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="4" class="text-danger">${i18n.t('messages.error')}</td></tr>`;
     }
 }
 
@@ -245,7 +246,7 @@ export function handleAddConsumer(ui: UI, callbacks: ConsumersViewCallbacks) {
             const tags = (document.getElementById('consumer_tags') as HTMLInputElement).value;
 
             if (!username && !custom_id) {
-                return showToast('Username ou Custom ID obrigatório', 'warning');
+                return showToast(i18n.t('errors.consumer_id_required'), 'warning');
             }
 
             try {
@@ -256,7 +257,7 @@ export function handleAddConsumer(ui: UI, callbacks: ConsumersViewCallbacks) {
                 });
                 ui.closeModal('consumerModal');
                 loadConsumersView(ui, callbacks);
-                showToast('Consumer criado', 'success');
+                showToast(i18n.t('consumers.create_success'), 'success');
             } catch (e: any) {
                 showToast(e.message, 'error');
             }

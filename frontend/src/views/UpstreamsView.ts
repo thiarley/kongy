@@ -3,6 +3,7 @@
  * Handles upstream and target management
  */
 import { api } from '../services/api';
+import { i18n } from '../services/i18n';
 import { UI } from '../ui';
 import { showToast } from '../utils';
 import { confirmAction } from './shared';
@@ -26,11 +27,11 @@ export async function loadUpstreamsView(ui: UI, callbacks: UpstreamsViewCallback
                     <td>${u.slots}</td>
                     <td>-</td>
                     <td>
-                        <button class="btn-icon text-primary upstream-targets" data-id="${u.id}" data-name="${u.name}" title="Gerenciar Targets"><i class="ph ph-crosshair"></i></button>
+                        <button class="btn-icon text-primary upstream-targets" data-id="${u.id}" data-name="${u.name}" title="${i18n.t('actions.manage_targets')}"><i class="ph ph-crosshair"></i></button>
                     </td>
                     <td>
-                        <button class="btn-icon text-primary upstream-edit" data-id="${u.id}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-                        <button class="btn-icon text-danger upstream-del" data-id="${u.id}" data-name="${u.name}" title="Deletar"><i class="ph ph-trash"></i></button>
+                        <button class="btn-icon text-primary upstream-edit" data-id="${u.id}" title="${i18n.t('actions.edit')}"><i class="ph ph-pencil-simple"></i></button>
+                        <button class="btn-icon text-danger upstream-del" data-id="${u.id}" data-name="${u.name}" title="${i18n.t('actions.delete')}"><i class="ph ph-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -48,7 +49,7 @@ export async function loadUpstreamsView(ui: UI, callbacks: UpstreamsViewCallback
             // Bind Delete
             tbody.querySelectorAll('.upstream-del').forEach((btn: any) => {
                 btn.onclick = async () => {
-                    if (await confirmAction('Deletar upstream?', `Deseja remover ${btn.dataset.name}?`)) {
+                    if (await confirmAction(i18n.t('upstreams.delete_confirm'))) {
                         await api.deleteUpstream(btn.dataset.id);
                         loadUpstreamsView(ui, callbacks);
                     }
@@ -56,7 +57,7 @@ export async function loadUpstreamsView(ui: UI, callbacks: UpstreamsViewCallback
             });
         }
     } catch (e: any) {
-        showToast('Erro upstreams: ' + e.message, 'error');
+        showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
     }
 }
 
@@ -86,14 +87,14 @@ export async function handleEditUpstream(ui: UI, id: string, callbacks: Upstream
                     });
                     ui.closeModal('upstreamModal');
                     loadUpstreamsView(ui, callbacks);
-                    showToast('Upstream updated', 'success');
+                    showToast(i18n.t('upstreams.update_success'), 'success');
                 } catch (e: any) {
                     showToast(e.message, 'error');
                 }
             };
         }
     } catch (e: any) {
-        showToast('Erro ao carregar upstream: ' + e.message, 'error');
+        showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
     }
 }
 
@@ -110,13 +111,13 @@ export function handleAddUpstream(ui: UI, callbacks: UpstreamsViewCallbacks) {
             const name = (document.getElementById('upstream_name') as HTMLInputElement).value;
             const slots = (document.getElementById('upstream_slots') as HTMLInputElement).value;
 
-            if (!name) return showToast('Nome obrigatório', 'warning');
+            if (!name) return showToast(i18n.t('errors.required'), 'warning');
 
             try {
                 await api.createUpstream({ name, slots: parseInt(slots) || 1000 });
                 ui.closeModal('upstreamModal');
                 loadUpstreamsView(ui, callbacks);
-                showToast('Upstream criado', 'success');
+                showToast(i18n.t('upstreams.create_success'), 'success');
             } catch (e: any) {
                 showToast(e.message, 'error');
             }
@@ -134,7 +135,7 @@ export async function loadTargetsView(ui: UI, upstreamId: string, upstreamName: 
     if (inputId) inputId.value = upstreamId;
 
     const tbody = document.querySelector('#targetsTable tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center">${i18n.t('messages.loading')}</td></tr>`;
 
     try {
         let targets = [];
@@ -149,7 +150,7 @@ export async function loadTargetsView(ui: UI, upstreamId: string, upstreamName: 
 
         if (tbody) {
             if (targets.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhum target encontrado</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${i18n.t('upstreams.targets_empty')}</td></tr>`;
             } else {
                 tbody.innerHTML = targets.map((t: any) => `
                 <tr>
@@ -169,7 +170,7 @@ export async function loadTargetsView(ui: UI, upstreamId: string, upstreamName: 
 
                 tbody.querySelectorAll('.target-del').forEach((btn: any) => {
                     btn.onclick = async () => {
-                        if (confirm('Deletar target?')) {
+                        if (confirm(i18n.t('upstreams.delete_target_confirm'))) {
                             await api.deleteUpstreamTarget(upstreamId, btn.dataset.id);
                             loadTargetsView(ui, upstreamId, upstreamName);
                         }
@@ -188,7 +189,7 @@ export async function handleAddTarget(ui: UI) {
     const weight = (document.getElementById('target_weight') as HTMLInputElement).value;
     const tags = (document.getElementById('target_tags') as HTMLInputElement).value;
 
-    if (!upstreamId || !target) return showToast('Alvo é obrigatório', 'warning');
+    if (!upstreamId || !target) return showToast(i18n.t('errors.target_required'), 'warning');
 
     try {
         await api.addUpstreamTarget(upstreamId, {
@@ -199,6 +200,7 @@ export async function handleAddTarget(ui: UI) {
         const nameEl = document.getElementById('targetsModalUpstreamName');
         loadTargetsView(ui, upstreamId, nameEl?.innerText || '');
         (document.getElementById('target_target') as HTMLInputElement).value = '';
+        showToast(i18n.t('upstreams.add_target_success'), 'success'); // Added success toast
     } catch (e: any) {
         showToast(e.message, 'error');
     }

@@ -4,6 +4,7 @@
  */
 import { auth } from './services/auth';
 import { api } from './services/api';
+import { i18n } from './services/i18n';
 import { UI } from './ui';
 import { store } from './store';
 import { showToast, setBusy } from './utils';
@@ -62,6 +63,7 @@ export class App {
 
     async init() {
         console.log('[DEBUG] App.init started');
+        await i18n.init(); // Initialize i18n
         this.ui.init();
         console.log('[DEBUG] UI.init finished');
         this.bindEvents();
@@ -163,201 +165,98 @@ export class App {
 
     bindEvents() {
         // Bind view callbacks from modules
-        bindServiceCallbacks(this.ui, {
+        const serviceCallbacks = {
             switchView: this.switchView.bind(this),
             updateServiceContext: this.updateServiceContext.bind(this),
             refreshRoutes: this.refreshRoutes.bind(this)
-        });
+        };
 
+        const viewCallbacks = {
+            switchView: this.switchView.bind(this)
+        };
+
+        // Bind view callbacks
+        bindServiceCallbacks(this.ui, serviceCallbacks);
         bindRouteCallbacks(this.ui);
         bindPluginCallbacks(this.ui);
 
-        // Consumer callbacks
-        this.ui.triggerConsumerDelete = async (consumer: any) => {
-            if (await confirmAction(`Deletar consumer ${consumer.username || consumer.id}?`)) {
-                try {
-                    await api.deleteConsumer(consumer.id);
-                    this.loadConsumersView();
-                    showToast('Consumer deletado', 'success');
-                } catch (e: any) {
-                    showToast(e.message, 'error');
-                }
-            }
-        };
-
-        this.ui.triggerConsumerDetails = async (consumer: any) => {
-            await loadConsumerDetails(this.ui, consumer, {
-                switchView: this.switchView.bind(this)
-            });
-        };
-
-        // Setup navigation
-        console.log('Setup Navigation...');
-        this.setupNavigation();
-
-        // Setup toolbar buttons
-        console.log('Setup Toolbar Buttons...');
-        this.setupToolbarButtons();
-
-        // Setup modal buttons
-        this.setupModalButtons();
-
-        // Setup consumer tabs
-        this.setupConsumerTabs();
-        console.log('Bind Events Complete');
-    }
-
-    setupNavigation() {
-        const navItems = document.querySelectorAll('.btn-nav[data-view]');
-        console.log(`Found ${navItems.length} nav items`);
-
-        navItems.forEach(item => {
-            const view = (item as HTMLElement).dataset.view;
-            console.log(`Binding click for view: ${view}`);
-
-            // Remove old listeners (clone hack)
-            const newItem = item.cloneNode(true);
-            item.parentNode?.replaceChild(newItem, item);
-
-            newItem.addEventListener('click', (e) => {
-                console.log(`Nav Clicked: ${view}`);
-                e.preventDefault();
-
-                if (!view) return;
-                const v = view.toUpperCase();
-
-                if (v === 'SERVICES') this.loadServicesView();
-                else if (v === 'ROUTES') this.refreshRoutes();
-                else if (v === 'CONSUMERS') this.loadConsumersView();
-                else if (v === 'UPSTREAMS') this.loadUpstreamsView();
-                else if (v === 'CERTIFICATES') this.loadCertificatesView();
-                else if (v === 'DASHBOARD') this.loadDashboard();
-            });
+        // --- Service Actions ---
+        document.getElementById('addServiceBtn')?.addEventListener('click', () => {
+            handleAddService(this.ui, serviceCallbacks);
         });
-
-        // All services button
-        document.getElementById('allServicesBtn')?.addEventListener('click', () => {
-            this.updateServiceContext(null);
+        document.getElementById('refreshServicesBtn')?.addEventListener('click', () => {
             this.loadServicesView();
         });
 
-        // Logout
-        document.getElementById('logoutBtn')?.addEventListener('click', () => {
-            auth.logout();
+        // --- Route Actions ---
+        document.getElementById('refreshRoutesBtn')?.addEventListener('click', () => {
+            this.refreshRoutes();
         });
-
-        // Settings
-        document.getElementById('settingsBtn')?.addEventListener('click', () => {
-            this.ui.openModal('settingsModal');
-        });
-    }
-
-    setupToolbarButtons() {
-        const check = (id: string) => {
-            const el = document.getElementById(id);
-            if (!el) console.warn(`Toolbar button not found: ${id}`);
-            return el;
-        };
-
-        // Add service
-        check('addServiceBtn')?.addEventListener('click', () => {
-            console.log('Add Service Clicked');
-            handleAddService(this.ui, {
-                switchView: this.switchView.bind(this),
-                updateServiceContext: this.updateServiceContext.bind(this),
-                refreshRoutes: this.refreshRoutes.bind(this)
-            });
-        });
-
-        // Add route
-        check('addRouteBtn')?.addEventListener('click', () => {
-            console.log('Add Route Clicked');
+        document.getElementById('addRouteBtn')?.addEventListener('click', () => {
             handleAddRoute(this.ui);
         });
-
-        // Add consumer
-        check('addConsumerBtn')?.addEventListener('click', () => {
-            console.log('Add Consumer Clicked');
-            handleAddConsumer(this.ui, {
-                switchView: this.switchView.bind(this)
-            });
+        document.getElementById('exportRoutesBtn')?.addEventListener('click', () => {
+            handleExportRoutes();
+        });
+        document.getElementById('loadFileBtn')?.addEventListener('click', () => {
+            document.getElementById('routeFileInput')?.click();
+        });
+        document.getElementById('routeFileInput')?.addEventListener('change', (e) => {
+            handleLoadFile(e);
+        });
+        document.getElementById('batchEditBtn')?.addEventListener('click', () => {
+            handleBatchEdit(this.ui);
+        });
+        document.getElementById('pluginBatchBtn')?.addEventListener('click', () => {
+            handleBatchPlugin(this.ui);
+        });
+        document.getElementById('deleteSelectedBtn')?.addEventListener('click', () => {
+            handleBatchDelete(this.ui);
         });
 
-        // Add upstream
-        check('addUpstreamBtn')?.addEventListener('click', () => {
-            console.log('Add Upstream Clicked');
-            handleAddUpstream(this.ui, {
-                switchView: this.switchView.bind(this)
-            });
+        // --- Consumer Actions ---
+        document.getElementById('refreshConsumersBtn')?.addEventListener('click', () => {
+            this.loadConsumersView();
+        });
+        document.getElementById('addConsumerBtn')?.addEventListener('click', () => {
+            handleAddConsumer(this.ui, viewCallbacks);
         });
 
-        // Add certificate
-        check('addCertificateBtn')?.addEventListener('click', () => {
-            console.log('Add Certificate Clicked');
-            handleAddCertificate(this.ui, {
-                switchView: this.switchView.bind(this)
-            });
+        // --- Upstream Actions ---
+        document.getElementById('refreshUpstreamsBtn')?.addEventListener('click', () => {
+            this.loadUpstreamsView();
+        });
+        document.getElementById('addUpstreamBtn')?.addEventListener('click', () => {
+            handleAddUpstream(this.ui, viewCallbacks);
         });
 
-        // ==================== Actions (Refresh, Export, Load) ====================
+        // --- Certificate Actions ---
+        document.getElementById('refreshCertificatesBtn')?.addEventListener('click', () => {
+            this.loadCertificatesView();
+        });
+        document.getElementById('addCertificateBtn')?.addEventListener('click', () => {
+            handleAddCertificate(this.ui, viewCallbacks);
+        });
 
-        // Dashboard
-        check('refreshDashboardBtn')?.addEventListener('click', () => this.loadDashboard());
-
-        // Services
-        check('refreshServicesBtn')?.addEventListener('click', () => this.loadServicesView());
-
-        // Routes
-        check('refreshRoutesBtn')?.addEventListener('click', () => this.refreshRoutes());
-        check('loadFileBtn')?.addEventListener('click', () => document.getElementById('routeFileInput')?.click());
-        document.getElementById('routeFileInput')?.addEventListener('change', (e) => handleLoadFile(e));
-
-        check('exportRoutesBtn')?.addEventListener('click', () => handleExportRoutes());
-
-        check('batchEditBtn')?.addEventListener('click', () => handleBatchEdit(this.ui));
-        check('pluginBatchBtn')?.addEventListener('click', () => handleBatchPlugin(this.ui));
-
-        // Delete Selected
-        check('deleteSelectedBtn')?.addEventListener('click', () => handleBatchDelete(this.ui));
-
-        // Search Route
+        // --- Search ---
         document.getElementById('routeSearch')?.addEventListener('input', (e) => {
             store.setSearchFilter((e.target as HTMLInputElement).value);
         });
 
-        // Select All Routes
-        document.getElementById('selectAllRoutes')?.addEventListener('change', (e) => {
-            store.selectAllRoutes((e.target as HTMLInputElement).checked);
-        });
-
-        // Consumers
-        check('refreshConsumersBtn')?.addEventListener('click', () => this.loadConsumersView());
-        check('backToConsumersBtn')?.addEventListener('click', () => this.loadConsumersView());
-
-        // Consumer Search
-        document.getElementById('consumerSearch')?.addEventListener('input', (e) => {
-            // Basic implementation for consumer search if needed, currently ui.renderConsumers handles it but store might need update
-            // Logic in renderConsumers currently reads input value directly.
-            // If we want to use store:
-            // store.setConsumerSearch(...)
-            // For now relies on direct UI filtering in renderConsumers or re-render
-            this.loadConsumersView(); // Trigger re-render to apply filter
-        });
-
-        // Upstreams/Certs
-        check('refreshUpstreamsBtn')?.addEventListener('click', () => this.loadUpstreamsView());
-        check('refreshCertificatesBtn')?.addEventListener('click', () => this.loadCertificatesView());
-
-        // Import routes
-        document.getElementById('importRoutesBtn')?.addEventListener('click', () => {
-            document.getElementById('routeFileInput')?.click();
-        });
-    }
-
-    setupModalButtons() {
-        // Add plugin button (General)
-        document.getElementById('addPluginBtn')?.addEventListener('click', () => {
-            handleAddPlugin(this.ui);
+        // --- Navigation ---
+        document.querySelectorAll('.btn-nav').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const view = (e.currentTarget as HTMLElement).dataset.view;
+                if (view) {
+                    if (view === 'services') this.loadServicesView();
+                    else if (view === 'routes') this.refreshRoutes();
+                    else if (view === 'consumers') this.loadConsumersView();
+                    else if (view === 'upstreams') this.loadUpstreamsView();
+                    else if (view === 'certificates') this.loadCertificatesView();
+                    else if (view === 'dashboard') this.loadDashboard();
+                    else this.switchView(view);
+                }
+            });
         });
 
         // Save plugin config
@@ -370,7 +269,24 @@ export class App {
             handleAddTarget(this.ui);
         });
 
-        // --- Consumer ACLs ---
+        // --- Consumer Triggers ---
+        this.ui.triggerConsumerDelete = async (consumer: any) => {
+            if (await confirmAction(i18n.t('consumers.delete_confirm', { name: consumer.username || consumer.id }))) {
+                try {
+                    await api.deleteConsumer(consumer.id);
+                    this.loadConsumersView();
+                    showToast(i18n.t('consumers.delete_success'), 'success');
+                } catch (e: any) {
+                    showToast(e.message, 'error');
+                }
+            }
+        };
+
+        this.ui.triggerConsumerDetails = (consumer: any) => {
+            loadConsumerDetails(this.ui, consumer, { switchView: this.switchView.bind(this) });
+        };
+
+        // --- Consumer ACLs & Credentials ---
         document.getElementById('addAclBtn')?.addEventListener('click', () => {
             this.ui.openModal('aclModal');
         });
@@ -381,18 +297,18 @@ export class App {
 
             const modal = document.getElementById('aclModal');
             const group = (document.getElementById('acl_group') as HTMLInputElement)?.value;
-            if (!group) return showToast('Grupo é obrigatório', 'warning');
+            if (!group) return showToast(i18n.t('errors.group_required'), 'warning');
 
             const aclId = modal?.dataset.aclId; // if present, it's edit
 
             try {
                 if (aclId) {
                     await api.updateConsumerAcl(consumer.id, aclId, group);
-                    showToast('ACL atualizada', 'success');
+                    showToast(i18n.t('consumers.acls.update_success'), 'success');
                     delete modal?.dataset.aclId;
                 } else {
                     await api.addConsumerAcl(consumer.id, group);
-                    showToast('ACL adicionada', 'success');
+                    showToast(i18n.t('consumers.acls.add_success'), 'success');
                 }
                 loadConsumerAcls(consumer.id);
                 this.ui.closeModal('aclModal');
@@ -403,7 +319,6 @@ export class App {
             }
         });
 
-        // --- Consumer Credentials ---
         document.getElementById('addCredentialBtn')?.addEventListener('click', () => {
             const activeTab = document.querySelector('.credential-tabs .tab-btn.active') as HTMLElement;
             const type = activeTab?.dataset.cred || 'basic-auth';
@@ -429,11 +344,11 @@ export class App {
             try {
                 if (credId) {
                     await api.updateConsumerCredential(consumer.id, type, credId, data);
-                    showToast('Credencial atualizada', 'success');
+                    showToast(i18n.t('consumers.credentials.update_success'), 'success');
                     delete modal?.dataset.credId;
                 } else {
                     await api.createConsumerCredential(consumer.id, type, data);
-                    showToast('Credencial adicionada', 'success');
+                    showToast(i18n.t('consumers.credentials.add_success'), 'success');
                 }
 
                 loadConsumerCredentials(consumer.id, type, this.ui);
@@ -443,7 +358,6 @@ export class App {
             }
         });
 
-        // --- Save Consumer Details ---
         document.getElementById('saveConsumerDetailsBtn')?.addEventListener('click', async () => {
             const consumer = getCurrentConsumer();
             if (!consumer) return;
@@ -458,13 +372,12 @@ export class App {
                     custom_id: custom_id || undefined,
                     tags: tags ? tags.split(',').map(t => t.trim()) : []
                 });
-                showToast('Consumer atualizado', 'success');
+                showToast(i18n.t('consumers.update_success'), 'success');
             } catch (e: any) {
                 showToast(e.message, 'error');
             }
         });
 
-        // --- Consumer Plugins ---
         document.getElementById('addConsumerPluginBtn')?.addEventListener('click', () => {
             const consumer = getCurrentConsumer();
             if (!consumer) return;
@@ -478,26 +391,31 @@ export class App {
                 modal.dataset.mode = ''; // Clear batch mode
             }
             populatePluginSelect();
-            // Hide list, show loading/empty initially or just list existing (which is handled by view usually)
-            // But here we are just adding.
             const list = document.getElementById('pluginsList');
-            if (list) list.style.display = 'none'; // We are adding, not listing
+            if (list) list.style.display = 'none';
         });
 
-        // --- Settings ---
+        // --- Generic Plugin Add ---
+        document.getElementById('addPluginBtn')?.addEventListener('click', () => {
+            handleAddPlugin(this.ui);
+        });
+
+        // --- Settings Action ---
+        document.getElementById('settingsBtn')?.addEventListener('click', () => {
+            this.ui.openModal('settingsModal');
+        });
+
         document.getElementById('saveSettingsBtn')?.addEventListener('click', async () => {
+            // ... (settings implementation) ...
             const url = (document.getElementById('conf_kong_url') as HTMLInputElement).value;
-            if (!url) return showToast('URL é obrigatória', 'warning');
+            if (!url) return showToast(i18n.t('errors.required'), 'warning');
 
             try {
-                // await api.updateConnectionConfig(url);
-                // Mocking connection test since backend for config might be different or local
-                // Assuming we just want to reload or check connection
                 const res = await api.getNodeStatus();
-                showToast('Conexão realizada com sucesso!', 'success');
+                showToast(i18n.t('messages.connection_success'), 'success');
                 this.ui.closeModal('settingsModal');
             } catch (e: any) {
-                showToast('Falha na conexão: ' + e.message, 'error');
+                showToast(`${i18n.t('messages.connection_error')}: ${e.message}`, 'error');
             }
         });
 
@@ -506,11 +424,11 @@ export class App {
             const newPass = (document.getElementById('newPassword') as HTMLInputElement).value;
             const confirm = (document.getElementById('confirmPassword') as HTMLInputElement).value;
 
-            if (newPass !== confirm) return showToast('Senhas não conferem', 'warning');
+            if (newPass !== confirm) return showToast(i18n.t('auth.passwords_do_not_match'), 'warning');
 
             try {
                 await auth.changePassword(current, newPass);
-                showToast('Senha alterada com sucesso', 'success');
+                showToast(i18n.t('auth.change_password_success'), 'success');
                 (document.getElementById('changePasswordForm') as HTMLFormElement).reset();
                 this.ui.closeModal('settingsModal');
             } catch (e: any) {
@@ -521,11 +439,13 @@ export class App {
         // Modal close buttons
         document.querySelectorAll('.modal-close, .modal .btn-secondary, .close-modal').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                e.preventDefault(); // prevent form submit
+                e.preventDefault();
                 const modal = btn.closest('.modal');
                 if (modal) this.ui.closeModal(modal.id);
             });
         });
+
+        this.setupConsumerTabs();
     }
 
     setupConsumerTabs() {

@@ -45,6 +45,7 @@ class I18n {
         }
 
         this.updateDocumentLang();
+        this.updateUI();
         this._initialized = true;
     }
 

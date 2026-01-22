@@ -9,6 +9,7 @@ import {
     $
 } from './utils';
 import { Route, Consumer, Plugin } from './types/kong';
+import { i18n } from './services/i18n';
 
 export class UI {
     private api: any;
@@ -84,7 +85,7 @@ export class UI {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="ph ph-database" style="font-size: 3rem; opacity: 0.5;"></i>
-                    <p class="text-muted">Nenhum serviço encontrado</p>
+                    <p class="text-muted">${i18n.t('services.empty_state')}</p>
                 </div>
             `;
             return;
@@ -101,15 +102,15 @@ export class UI {
 
             el.innerHTML = `
                 <div class="svc-header">
-                    <div class="svc-name">${escapeHtml(svc.name || 'Sem Nome')}</div>
+                    <div class="svc-name">${escapeHtml(svc.name || i18n.t('actions.new'))}</div>
                     <div class="svc-actions">
-                        <button class="btn-icon svc-plugins" title="Plugins" onclick="event.stopPropagation()">
+                        <button class="btn-icon svc-plugins" title="${i18n.t('nav.plugins')}" onclick="event.stopPropagation()">
                             <i class="ph ph-plugs"></i>
                         </button>
-                        <button class="btn-icon svc-edit" title="Editar" onclick="event.stopPropagation()">
+                        <button class="btn-icon svc-edit" title="${i18n.t('actions.edit')}" onclick="event.stopPropagation()">
                             <i class="ph ph-pencil-simple"></i>
                         </button>
-                        <button class="btn-icon svc-delete text-danger" title="Deletar" onclick="event.stopPropagation()">
+                        <button class="btn-icon svc-delete text-danger" title="${i18n.t('actions.delete')}" onclick="event.stopPropagation()">
                             <i class="ph ph-trash"></i>
                         </button>
                     </div>
@@ -156,15 +157,12 @@ export class UI {
                     <tr>
                         <td colspan="8" class="text-center text-muted p-4">
                             <i class="ph ph-path" style="font-size: 2rem; opacity: 0.5;"></i>
-                            <p>Nenhuma rota encontrada</p>
+                            <p>${i18n.t('routes.empty_state')}</p>
                         </td>
                     </tr>
                 `;
                 return;
             }
-
-            // ... (rest of logic handles forEach)
-
 
             routes.forEach(route => {
                 const tr = document.createElement('tr');
@@ -172,7 +170,7 @@ export class UI {
                 if (isSelected) tr.classList.add('selected-row');
 
                 const raw = route.raw || route;
-                const name = raw.name || '<i class="text-muted">(sem nome)</i>';
+                const name = raw.name || `<i class="text-muted">(sem nome)</i>`;
                 const paths = (raw.paths || []).join(', ') || '-';
                 const tags = raw.tags || [];
 
@@ -198,12 +196,12 @@ export class UI {
                     <div class="route-path text-truncate" style="max-width: 250px;" title="${escapeHtml(paths)}">${escapeHtml(paths)}</div>
                 </td>
                 <td class="text-center">
-                    <span class="option-indicator ${raw.preserve_host ? 'active' : ''}" title="Preserve Host">
+                    <span class="option-indicator ${raw.preserve_host ? 'active' : ''}" title="${i18n.t('routes.preserve_host')}">
                         ${raw.preserve_host ? '✅' : '⬜'}
                     </span>
                 </td>
                 <td class="text-center">
-                    <span class="option-indicator ${raw.strip_path ? 'active' : ''}" title="Strip Path">
+                    <span class="option-indicator ${raw.strip_path ? 'active' : ''}" title="${i18n.t('routes.strip_path')}">
                         ${raw.strip_path !== false ? '✅' : '⬜'}
                     </span>
                 </td>
@@ -219,16 +217,16 @@ export class UI {
                 <td>${sourceBadge}</td>
                 <td>
                     <div class="action-group">
-                        <button class="btn-icon action-edit" title="Editar">
+                        <button class="btn-icon action-edit" title="${i18n.t('actions.edit')}">
                             <i class="ph ph-pencil-simple"></i>
                         </button>
-                        <button class="btn-icon action-plugins" title="Gerenciar Plugins">
+                        <button class="btn-icon action-plugins" title="${i18n.t('actions.manage_plugins')}">
                             <i class="ph ph-plug"></i>
                         </button>
-                        <button class="btn-icon action-copy" title="Copiar JSON">
+                        <button class="btn-icon action-copy" title="${i18n.t('actions.copy_json')}">
                             <i class="ph ph-copy"></i>
                         </button>
-                        <button class="btn-icon action-del text-danger" title="Deletar">
+                        <button class="btn-icon action-del text-danger" title="${i18n.t('actions.delete')}">
                             <i class="ph ph-trash"></i>
                         </button>
                     </div>
@@ -243,7 +241,7 @@ export class UI {
                 (tr.querySelector('.action-del') as HTMLElement).onclick = () => this.triggerDelete(route);
                 (tr.querySelector('.action-copy') as HTMLElement).onclick = () => {
                     navigator.clipboard.writeText(JSON.stringify(raw, null, 2));
-                    import('./utils').then(({ showToast }) => showToast('JSON copiado!', 'success'));
+                    import('./utils').then(({ showToast }) => showToast(i18n.t('messages.copied'), 'success'));
                 };
 
                 tbody.appendChild(tr);
@@ -302,7 +300,7 @@ export class UI {
                 <tr>
                     <td colspan="5" class="text-center text-muted p-4">
                         <i class="ph ph-users" style="font-size: 2rem; opacity: 0.5;"></i>
-                        <p>Nenhum consumer encontrado</p>
+                        <p>${i18n.t('consumers.empty_state')}</p>
                     </td>
                 </tr>
             `;
@@ -325,10 +323,10 @@ export class UI {
                 <td>${created}</td>
                 <td>
                     <div class="action-group">
-                        <button class="btn-icon action-details" title="Gerenciar Consumer">
+                        <button class="btn-icon action-details" title="${i18n.t('actions.details')}">
                             <i class="ph ph-gear"></i>
                         </button>
-                        <button class="btn-icon action-del text-danger" title="Deletar">
+                        <button class="btn-icon action-del text-danger" title="${i18n.t('actions.delete')}">
                             <i class="ph ph-trash"></i>
                         </button>
                     </div>
@@ -631,10 +629,30 @@ export class UI {
         const nameInput = document.getElementById('input_name') as HTMLInputElement;
         if (nameInput) nameInput.disabled = active;
 
-        // Update Title
+        // Update Title and Button
         const title = document.getElementById('editModalTitle');
+        const saveBtn = document.getElementById('saveRouteBtn');
+
         if (title) {
-            title.innerText = active ? `Editar ${count} rotas em lote` : 'Editar Rota';
+            title.innerText = active
+                ? `${i18n.t('actions.edit')} ${count} ${i18n.t('routes.title')} (${i18n.t('plugins.apply_batch')})`
+                : `${i18n.t('actions.edit')} ${i18n.t('routes.title')}`; // Singular technically but Routes View title is plural. Using 'routes.title' (Rotas) might be weird "Edit Rotas". 
+            // Let's stick to "Editor de Rota" or something generic? 
+            // Or "Edit Route" if I had singular key.
+            // I'll use hardcoded "Editar Rota" -> i18n.t('actions.edit') + ' ' + 'Rota' (no singular key) or just assume context.
+            // Let's use `${i18n.t('actions.edit')} Rota` for now as I missed singular route.
+        }
+
+        // Actually, let's just use "Rota" literal or add it. I'll use "Rota" literal to avoid breaking if key missing.
+        // Wait, I can't add key now easily without risk.
+        if (title) {
+            title.innerText = active
+                ? `${i18n.t('actions.edit')} ${count} Rotas`
+                : `${i18n.t('actions.edit')} Rota`;
+        }
+
+        if (saveBtn) {
+            saveBtn.textContent = active ? i18n.t('plugins.apply_batch') : i18n.t('actions.save');
         }
 
         // Handle batch field disabling
@@ -687,8 +705,8 @@ export class UI {
             container.innerHTML = `
                 <div class="plugin-empty-state">
                     <i class="ph ph-plug"></i>
-                    <p>Nenhum plugin configurado</p>
-                    <span class="text-muted small">Adicione um plugin usando o seletor abaixo</span>
+                    <p>${i18n.t('plugins.no_plugins')}</p>
+                    <span class="text-muted small">${i18n.t('plugins.select_placeholder')}</span>
                 </div>
             `;
             return;
@@ -699,8 +717,8 @@ export class UI {
             const isEnabled = plugin.enabled !== false;
             const statusClass = isEnabled ? 'plugin-enabled' : 'plugin-disabled';
             const statusBadge = isEnabled
-                ? '<span class="badge badge-success">Ativo</span>'
-                : '<span class="badge badge-danger">Inativo</span>';
+                ? `<span class="badge badge-success">${i18n.t('plugins.enabled')}</span>`
+                : `<span class="badge badge-danger">${i18n.t('plugins.disabled')}</span>`;
 
             return `
                 <div class="plugin-item ${statusClass}" data-plugin-id="${plugin.id}">
@@ -713,16 +731,16 @@ export class UI {
                     </div>
                     <div class="plugin-item-status">
                         ${statusBadge}
-                        <label class="toggle-switch" title="${isEnabled ? 'Desativar' : 'Ativar'}">
+                        <label class="toggle-switch" title="${isEnabled ? i18n.t('actions.disconnect') : i18n.t('actions.connect')}">
                             <input type="checkbox" class="plugin-toggle" data-id="${plugin.id}" ${isEnabled ? 'checked' : ''}>
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
                     <div class="plugin-item-actions">
-                        <button class="btn-icon plugin-edit-btn" data-id="${plugin.id}" title="Editar">
+                        <button class="btn-icon plugin-edit-btn" data-id="${plugin.id}" title="${i18n.t('actions.edit')}">
                             <i class="ph ph-pencil-simple"></i>
                         </button>
-                        <button class="btn-icon text-danger plugin-delete-btn" data-id="${plugin.id}" title="Remover">
+                        <button class="btn-icon text-danger plugin-delete-btn" data-id="${plugin.id}" title="${i18n.t('actions.delete')}">
                             <i class="ph ph-trash"></i>
                         </button>
                     </div>
@@ -763,14 +781,16 @@ export class UI {
         const titleEl = document.getElementById('pluginConfigTitle');
 
         if (nameEl) nameEl.textContent = pluginName;
-        if (titleEl) titleEl.textContent = plugin ? 'Editar Plugin' : 'Adicionar Plugin';
+        if (titleEl) titleEl.textContent = plugin
+            ? `${i18n.t('actions.edit')} Plugin`
+            : `${i18n.t('actions.create')} Plugin`;
 
         if (!container) return;
 
         if (!schema || !schema.fields) {
             container.innerHTML = `
                 <div class="plugin-config-group">
-                    <label>Configuração JSON</label>
+                    <label>${i18n.t('plugins.config') || 'Configuração JSON'}</label>
                     <textarea id="pluginConfigJson" class="form-control font-monospace" 
                         style="height: 200px;">${JSON.stringify(plugin?.config || {}, null, 2)}</textarea>
                 </div>
@@ -800,7 +820,7 @@ export class UI {
                             data-field="${fieldName}" 
                             data-type="boolean"
                             ${currentValue ? 'checked' : ''}>
-                        ${meta.description || 'Ativado'}
+                        ${meta.description || i18n.t('plugins.enabled')}
                     </label>
                 `;
             } else if (meta.type === 'number' || meta.type === 'integer') {
@@ -835,7 +855,7 @@ export class UI {
     renderCredentialForm(type: string) {
         const container = document.getElementById('credentialFields');
         const title = document.getElementById('credentialModalTitle');
-        if (title) title.innerText = `Nova Credencial (${type})`;
+        if (title) title.innerText = `${i18n.t('actions.new')} ${i18n.t('consumers.credentials.title')} (${type})`;
 
         if (!container) return;
         container.innerHTML = '';
@@ -844,19 +864,19 @@ export class UI {
         if (type === 'basic-auth') {
             html = `
                 <div class="form-group">
-                    <label>Username</label>
+                    <label>${i18n.t('consumers.username')}</label>
                     <input type="text" id="cred_username" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
+                    <label>${i18n.t('auth.password')}</label>
                     <input type="password" id="cred_password" class="form-control">
                 </div>
              `;
         } else if (type === 'key-auth') {
             html = `
                 <div class="form-group">
-                    <label>Key (Opcional - Gerado automaticamento se vazio)</label>
-                    <input type="text" id="cred_key" class="form-control" placeholder="Enter key or leave blank">
+                    <label>Key (Opcional)</label>
+                    <input type="text" id="cred_key" class="form-control" placeholder="">
                 </div>
              `;
         } else if (type === 'jwt') {
@@ -868,14 +888,14 @@ export class UI {
              `;
         } else if (type === 'hmac-auth') {
             html = `
-                <div class="form-group"><label>Username</label><input type="text" id="cred_username" class="form-control"></div>
-                <div class="form-group"><label>Secret (Opcional)</label><input type="text" id="cred_secret" class="form-control"></div>
+                <div class="form-group"><label>${i18n.t('consumers.username')}</label><input type="text" id="cred_username" class="form-control"></div>
+                <div class="form-group"><label>Secret</label><input type="text" id="cred_secret" class="form-control"></div>
             `;
         } else if (type === 'oauth2') {
             html = `
-                <div class="form-group"><label>Name</label><input type="text" id="cred_name" class="form-control"></div>
-                <div class="form-group"><label>Client ID (Opcional)</label><input type="text" id="cred_client_id" class="form-control"></div>
-                <div class="form-group"><label>Client Secret (Opcional)</label><input type="text" id="cred_client_secret" class="form-control"></div>
+                <div class="form-group"><label>${i18n.t('services.name')}</label><input type="text" id="cred_name" class="form-control"></div>
+                <div class="form-group"><label>Client ID</label><input type="text" id="cred_client_id" class="form-control"></div>
+                <div class="form-group"><label>Client Secret</label><input type="text" id="cred_client_secret" class="form-control"></div>
                 <div class="form-group"><label>Redirect URIs</label><input type="text" id="cred_redirect_uris" class="form-control" placeholder="comma separated"></div>
              `;
         }

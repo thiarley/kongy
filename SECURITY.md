@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within Kongy, please send an email to security@example.com. All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability within Kongy, please send an email to [INSERT SECURITY EMAIL]. All security vulnerabilities will be promptly addressed.
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 

@@ -1,6 +1,6 @@
 # Kongy 🦍
 
-**Kong Gateway Manager** - Open source visual interface for managing routes, services, plugins, and consumers in Kong Gateway.
+**Kong Gateway Manager** - Interface visual open source para gerenciamento de rotas, plugins e consumers no Kong Gateway.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
@@ -9,44 +9,44 @@
 [![Kong](https://img.shields.io/badge/Kong-3.x-green.svg)](https://konghq.com/)
 
 > [!NOTE]
-> Leia em Português: [README.pt-BR.md](README.pt-BR.md)
+> Read in English: [README.md](README.md)
 
 ---
 
 ## ✨ Features
 
-- 🔐 **Self-contained Authentication** - JWT with initial setup, no external service dependencies
-- 🌍 **Internationalization** - Support for Portuguese (BR) and English (US) with automatic detection
-- 🛡️ **Security** - Rate limiting, security headers, brute-force protection
-- 📦 **Docker Ready** - Ready for deployment with Docker Compose
-- 🧪 **Kong Local** - Development environment with integrated Kong
-- 🔌 **Plugin Management** - Apply plugins to routes, services, and consumers
-- 📤 **Import/Export** - Export and import route configurations
-- ⚡ **Vite + TypeScript** - Modern frontend with Hot Module Replacement
+- 🔐 **Autenticação própria** - JWT com setup inicial, sem dependência de serviços externos
+- 🌍 **Internacionalização** - Suporte a Português (BR) e Inglês (US) com detecção automática
+- 🛡️ **Segurança** - Rate limiting, headers de segurança, proteção contra brute-force
+- 📦 **Docker Ready** - Pronto para deploy com Docker Compose
+- 🧪 **Kong Local** - Ambiente de desenvolvimento com Kong integrado
+- 🔌 **Gestão de Plugins** - Aplicar plugins em rotas, serviços e consumers
+- 📤 **Import/Export** - Exportar e importar configurações de rotas
+- ⚡ **Vite + TypeScript** - Frontend moderno com Hot Module Replacement
 
 ---
 
 ## 🚀 Quick Start
 
-### Using Docker (Recommended)
+### Com Docker (recomendado)
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/kongy.git
+# Clone o repositório
+git clone https://github.com/seu-usuario/kongy.git
 cd kongy
 
-# Copy the environment file
+# Copie o arquivo de ambiente
 cp .env.example .env
 
-# Start all services (Kong + Kongy)
+# Inicie todos os serviços (Kong + Kongy)
 docker compose up -d
 
-# Access http://localhost:8081
+# Acesse http://localhost:8081
 ```
 
-On first access, you will be redirected to create the administrator user.
+No primeiro acesso, você será direcionado para criar o usuário administrador.
 
-### Local Development
+### Desenvolvimento Local
 
 ```bash
 # Backend
@@ -56,13 +56,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 
-# Frontend (in another terminal)
+# Frontend (em outro terminal)
 cd frontend
 npm install
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:8081` with HMR.
+O frontend estará disponível em `http://localhost:8081` com HMR.
 
 ---
 
@@ -79,12 +79,13 @@ The frontend will be available at `http://localhost:8081` with HMR.
 │                              │  - Rate Limiting           │  │
 │                              └──────────┬─────────────────┘  │
 │                                         │                    │
-│                                         ▼                    │
-│                               ┌─────────────────────┐       │
-│                               │   Kong Admin API    │       │
-│                               │   :8001 (internal)  │       │
-│                               └─────────────────────┘       │
-└─────────────────────────────────────────┼───────────────────┘
+└─────────────────────────────────────────┼────────────────────┘
+                                          │
+                                          ▼
+                              ┌─────────────────────┐
+                              │   Kong Admin API    │
+                              │   :8001 (internal)  │
+                              └─────────────────────┘
 ```
 
 ---
@@ -127,20 +128,20 @@ kongy/
 | `JWT_EXPIRE_MINUTES` | Token expiration | `60` |
 | `CORS_ORIGINS` | Allowed CORS origins | `["http://localhost:8081"]` |
 
-See `.env.example` for all options.
+Veja `.env.example` para todas as opções.
 
 ---
 
 ## 🔒 Security
 
-> ⚠️ **Important**: Data is stored in memory and lost upon restart.
-> Configure the admin user at every startup.
+> ⚠️ **Importante**: Dados são armazenados em memória e perdidos ao reiniciar.
+> Configure o usuário admin a cada startup.
 
 - JWT Authentication
-- Rate Limiting (configurable)
-- Brute-force protection
+- Rate Limiting (configurável)
+- Proteção contra brute-force
 - Security Headers (CSP, X-Frame-Options, etc.)
-- Non-root containers
+- Containers não-root
 
 ---
 
@@ -161,10 +162,10 @@ npm run build
 
 ## 🐳 Docker Production
 
-### Build and Deploy
+### Build e Deploy
 
 ```bash
-# Production Build
+# Build de produção
 docker compose -f docker-compose.prod.yml build
 
 # Deploy
@@ -173,19 +174,19 @@ docker compose -f docker-compose.prod.yml up -d
 
 ### Kubernetes
 
-Deployment example available in `k8s/` (coming soon).
+Exemplo de deployment disponível em `k8s/` (em breve).
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+Contribuições são bem-vindas! Veja [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE).
+MIT License - veja [LICENSE](LICENSE).
 
 ---
 

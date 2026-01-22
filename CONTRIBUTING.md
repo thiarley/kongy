@@ -45,8 +45,8 @@ pytest  # Run tests
 
 # Frontend development  
 cd frontend
-# Serve with any static server
-python -m http.server 8080
+npm install
+npm run dev
 ```
 
 ## Code Style

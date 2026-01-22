@@ -3,6 +3,7 @@
  * Handles certificate listing, creation and management
  */
 import { api } from '../services/api';
+import { i18n } from '../services/i18n';
 import { UI } from '../ui';
 import { showToast } from '../utils';
 import { confirmAction } from './shared';
@@ -34,7 +35,7 @@ export async function loadCertificatesView(ui: UI, callbacks: CertificatesViewCa
 
             tbody.querySelectorAll('.cert-del').forEach((btn: any) => {
                 btn.onclick = async () => {
-                    if (await confirmAction('Deletar certificado?')) {
+                    if (await confirmAction(i18n.t('certificates.delete_confirm'))) {
                         await api.deleteCertificate(btn.dataset.id);
                         loadCertificatesView(ui, callbacks);
                     }
@@ -46,13 +47,13 @@ export async function loadCertificatesView(ui: UI, callbacks: CertificatesViewCa
             });
         }
     } catch (e: any) {
-        showToast('Erro certificates: ' + e.message, 'error');
+        showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
     }
 }
 
 export async function handleEditCertificate(ui: UI, id: string, callbacks: CertificatesViewCallbacks) {
     ui.openModal('certificateModal');
-    document.getElementById('certificateModalTitle')!.innerText = 'Editar Certificado';
+    document.getElementById('certificateModalTitle')!.innerText = `${i18n.t('actions.edit')} ${i18n.t('certificates.title')}`;
     (document.getElementById('certificate_id') as HTMLInputElement).value = id;
 
     try {
@@ -80,14 +81,14 @@ export async function handleEditCertificate(ui: UI, id: string, callbacks: Certi
                     });
                     ui.closeModal('certificateModal');
                     loadCertificatesView(ui, callbacks);
-                    showToast('Certificate updated', 'success');
+                    showToast(i18n.t('certificates.update_success'), 'success');
                 } catch (e: any) {
                     showToast(e.message, 'error');
                 }
             };
         }
     } catch (e: any) {
-        showToast('Erro ao carregar certificado: ' + e.message, 'error');
+        showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
         ui.closeModal('certificateModal');
     }
 }
@@ -102,7 +103,7 @@ export function handleAddCertificate(ui: UI, callbacks: CertificatesViewCallback
     });
 
     const titleEl = document.getElementById('certificateModalTitle');
-    if (titleEl) titleEl.innerText = 'Novo Certificado';
+    if (titleEl) titleEl.innerText = `${i18n.t('actions.new')} ${i18n.t('certificates.title')}`;
 
     const saveBtn = document.getElementById('saveCertificateBtn');
     if (saveBtn) {
@@ -121,7 +122,7 @@ export function handleAddCertificate(ui: UI, callbacks: CertificatesViewCallback
                 });
                 ui.closeModal('certificateModal');
                 loadCertificatesView(ui, callbacks);
-                showToast('Certificate created', 'success');
+                showToast(i18n.t('certificates.create_success'), 'success');
             } catch (e: any) {
                 showToast(e.message, 'error');
             }

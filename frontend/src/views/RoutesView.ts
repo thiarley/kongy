@@ -3,6 +3,7 @@
  * Handles route listing, creation, import/export and batch operations
  */
 import { api } from '../services/api';
+import { i18n } from '../services/i18n';
 import { UI } from '../ui';
 import { store } from '../store';
 import { showToast, setBusy } from '../utils';
@@ -24,7 +25,7 @@ export async function refreshRoutes() {
         store.setPlugins(pluginsData.data || []);
 
     } catch (e: any) {
-        showToast('Erro ao carregar rotas: ' + e.message, 'error');
+        showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
     } finally {
         store.setLoading(false);
     }
@@ -39,14 +40,14 @@ export function handleAddRoute(ui: UI) {
         btn.onclick = async () => {
             const data = ui.getRouteFormData();
             if (!data.name) {
-                return showToast('Nome da rota obrigatório (recomendado)', 'warning');
+                return showToast(i18n.t('errors.name_required'), 'warning');
             }
 
             try {
                 await api.saveRoute(data);
                 ui.closeModal('editModal');
                 refreshRoutes();
-                showToast('Rota criada', 'success');
+                showToast(i18n.t('routes.create_success'), 'success');
             } catch (e: any) {
                 showToast(e.message, 'error');
             }
@@ -101,7 +102,7 @@ export function handleLoadFile(event: any) {
             } else if (raw.routes && Array.isArray(raw.routes)) {
                 routesList = raw.routes;
             } else {
-                throw new Error('O arquivo deve conter uma lista de rotas ou um objeto com a propriedade "routes".');
+                throw new Error(i18n.t('messages.import_error'));
             }
 
             setBusy(document.getElementById('routesTable'), true);
@@ -147,15 +148,16 @@ export function handleLoadFile(event: any) {
             setBusy(document.getElementById('routesTable'), false);
             refreshRoutes();
 
-            let msg = `${count} rotas importadas.`;
-            if (errors > 0) msg += ` ${errors} falharam.`;
-            if (pluginErrors > 0) msg += ` ${pluginErrors} plugins falharam.`;
+            let msg = i18n.t('messages.import_success', { count });
+            if (errors > 0 || pluginErrors > 0) {
+                msg = i18n.t('messages.batch_partial', { success: count, errors: errors + pluginErrors });
+            }
 
             showToast(msg, errors > 0 ? 'warning' : 'success');
 
         } catch (err: any) {
             setBusy(document.getElementById('routesTable'), false);
-            showToast('Erro ao importar: ' + err.message, 'error');
+            showToast(`${i18n.t('messages.import_error')}: ${err.message}`, 'error');
         }
     };
     reader.readAsText(file);
@@ -182,7 +184,7 @@ export function handleBatchEdit(ui: UI) {
             const checks = document.querySelectorAll('.batch-field-check:checked');
 
             if (checks.length === 0) {
-                showToast('Selecione pelo menos um campo para alterar', 'warning');
+                showToast(i18n.t('routes.batch_no_change_warning'), 'warning');
                 return;
             }
 
@@ -220,12 +222,12 @@ export function handleBatchEdit(ui: UI) {
                 refreshRoutes();
 
                 if (errorCount === 0) {
-                    showToast(`${successCount} rotas atualizadas com sucesso`, 'success');
+                    showToast(i18n.t('messages.batch_success', { count: successCount }), 'success');
                 } else {
-                    showToast(`${successCount} atualizadas, ${errorCount} falharam`, 'warning');
+                    showToast(i18n.t('messages.batch_partial', { success: successCount, errors: errorCount }), 'warning');
                 }
             } catch (e: any) {
-                showToast('Erro no processamento em lote', 'error');
+                showToast(i18n.t('messages.error'), 'error');
             } finally {
                 setBusy(document.querySelector('.modal-content'), false);
                 ui.setBatchMode(false);
@@ -249,7 +251,7 @@ export function bindRouteCallbacks(ui: UI) {
                     await api.updateRoute(route.id, data);
                     ui.closeModal('editModal');
                     refreshRoutes();
-                    showToast('Rota atualizada!', 'success');
+                    showToast(i18n.t('routes.update_success'), 'success');
                 } catch (e: any) {
                     showToast(e.message, 'error');
                 }
@@ -259,12 +261,12 @@ export function bindRouteCallbacks(ui: UI) {
 
     // Delete route
     ui.triggerDelete = async (route: any) => {
-        if (await confirmAction('Deletar rota?')) {
+        if (await confirmAction(i18n.t('routes.delete_confirm'))) {
             try {
                 await api.deleteRoute(route.id);
                 store.removeRoute(route.id);
                 refreshRoutes();
-                showToast('Rota deletada', 'success');
+                showToast(i18n.t('routes.delete_success'), 'success');
             } catch (e: any) {
                 showToast(e.message, 'error');
             }
@@ -274,9 +276,9 @@ export function bindRouteCallbacks(ui: UI) {
 
 export async function handleBatchDelete(ui: UI) {
     const ids = store.selectedIds;
-    if (ids.length === 0) return showToast('Selecione rotas', 'warning');
+    if (ids.length === 0) return showToast(i18n.t('routes.select_warning'), 'warning');
 
-    if (await confirmAction(`Deletar ${ids.length} rotas selecionadas?`)) {
+    if (await confirmAction(i18n.t('routes.delete_multiple_confirm', { count: ids.length }))) {
         setBusy(document.getElementById('routesTable'), true);
         let success = 0;
         let errors = 0;
@@ -294,9 +296,9 @@ export async function handleBatchDelete(ui: UI) {
         setBusy(document.getElementById('routesTable'), false);
 
         if (errors === 0) {
-            showToast(`${success} rotas deletadas`, 'success');
+            showToast(i18n.t('messages.batch_delete_success', { count: success }), 'success');
         } else {
-            showToast(`${success} deletadas, ${errors} falharam`, 'warning');
+            showToast(i18n.t('messages.batch_partial', { success, errors }), 'warning');
         }
     }
 }

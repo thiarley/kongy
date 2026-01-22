@@ -15,15 +15,26 @@
     "login_button": "Entrar",
     "login_error": "Credenciais inválidas",
     "rate_limit_error": "Muitas tentativas. Aguarde alguns minutos.",
-    "session_expired": "Sessão expirada. Faça login novamente."
+    "session_expired": "Sessão expirada. Faça login novamente.",
+    "change_password_success": "Senha alterada com sucesso",
+    "passwords_do_not_match": "Senhas não conferem",
+    "verifying": "Verificando autenticação...",
+    "security": "Segurança",
+    "change_password_desc": "Altere sua senha de acesso ao Kongy Admin.",
+    "current_password": "Senha Atual",
+    "new_password": "Nova Senha",
+    "confirm_password": "Confirmar Nova Senha",
+    "change_password": "Alterar Senha"
   },
   "nav": {
+    "dashboard": "Dashboard",
     "services": "Serviços",
     "routes": "Rotas",
     "plugins": "Plugins",
     "consumers": "Consumers",
     "upstreams": "Upstreams",
-    "certificates": "Certificados"
+    "certificates": "Certificados",
+    "settings": "Configurações"
   },
   "actions": {
     "save": "Salvar",
@@ -42,12 +53,21 @@
     "deselect_all": "Desmarcar Todos",
     "close": "Fechar",
     "confirm": "Confirmar",
-    "back": "Voltar"
+    "back": "Voltar",
+    "manage_plugins": "Gerenciar Plugins",
+    "manage_targets": "Gerenciar Targets",
+    "details": "Detalhes",
+    "copy_json": "Copiar JSON",
+    "toggle": "Alternar",
+    "exit_context": "Sair do contexto",
+    "save_test": "Salvar & Testar",
+    "edit_route": "Editar Rota"
   },
   "messages": {
     "success": "Operação realizada com sucesso",
     "error": "Erro ao processar operação",
     "confirm_delete": "Tem certeza que deseja excluir?",
+    "confirm_delete_android": "Tem certeza que deseja excluir este item?",
     "confirm_delete_multiple": "Tem certeza que deseja excluir {count} itens?",
     "loading": "Carregando...",
     "no_data": "Nenhum dado encontrado",
@@ -55,20 +75,51 @@
     "kong_unavailable": "Kong Admin API indisponível",
     "saved": "Salvo com sucesso",
     "deleted": "Excluído com sucesso",
-    "copied": "Copiado para a área de transferência"
+    "copied": "Copiado para a área de transferência",
+    "json_invalid": "JSON Inválido",
+    "batch_success": "{count} itens atualizados com sucesso",
+    "batch_partial": "{success} atualizados, {errors} falharam",
+    "batch_delete_success": "{count} itens deletados",
+    "import_success": "{count} itens importados",
+    "import_error": "Erro ao importar arquivo",
+    "connection_success": "Conexão realizada com sucesso!"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "loading": "Carregando...",
+    "hostname": "Hostname",
+    "version": "Versão",
+    "lua_version": "Versão Lua",
+    "plugins_count": "Plugins Ativos",
+    "admin_listen": "Admin Listen",
+    "total_requests": "Total de Requisições",
+    "active_services": "Serviços Ativos",
+    "total_routes": "Total de Rotas",
+    "node_status": "Status do Nó",
+    "plugins_enabled": "Plugins Ativos",
+    "configuration": "Configuração"
   },
   "services": {
     "title": "Serviços",
+    "entity": "Serviço",
     "name": "Nome",
     "host": "Host",
     "port": "Porta",
     "protocol": "Protocolo",
     "path": "Path",
     "routes_count": "Rotas",
-    "plugins_count": "Plugins"
+    "plugins_count": "Plugins",
+    "create_success": "Serviço criado!",
+    "update_success": "Serviço atualizado!",
+    "delete_success": "Serviço deletado",
+    "delete_confirm": "Deletar serviço {name}?",
+    "empty_state": "Nenhum serviço encontrado",
+    "current": "Serviço Atual",
+    "plugins_title": "Plugins do Serviço"
   },
   "routes": {
     "title": "Rotas",
+    "entity": "Rota",
     "name": "Nome",
     "paths": "Paths",
     "methods": "Métodos",
@@ -79,24 +130,92 @@
     "preserve_host": "Preserve Host",
     "tags": "Tags",
     "regex_priority": "Prioridade Regex",
-    "service": "Serviço"
+    "service": "Serviço",
+    "create_success": "Rota criada",
+    "update_success": "Rota atualizada!",
+    "delete_success": "Rota deletada",
+    "delete_confirm": "Deletar rota?",
+    "delete_multiple_confirm": "Deletar {count} rotas selecionadas?",
+    "empty_state": "Nenhuma rota encontrada",
+    "select_warning": "Selecione rotas",
+    "batch_no_change_warning": "Selecione pelo menos um campo para alterar",
+    "source": "Fonte"
   },
   "plugins": {
     "title": "Plugins",
+    "entity": "Plugin",
     "name": "Nome",
-    "enabled": "Habilitado",
-    "disabled": "Desabilitado",
+    "enabled": "Ativo",
+    "disabled": "Inativo",
     "config": "Configuração",
     "apply_batch": "Aplicar em Lote",
     "select_plugin": "Selecionar Plugin",
-    "no_plugins": "Nenhum plugin configurado"
+    "no_plugins": "Nenhum plugin configurado",
+    "create_success": "Plugin criado",
+    "update_success": "Plugin atualizado",
+    "delete_success": "Plugin removido",
+    "delete_confirm": "Deletar plugin?",
+    "toggle_on": "Plugin ativado",
+    "toggle_off": "Plugin desativado",
+    "select_placeholder": "Selecione um plugin...",
+    "auth_forbidden": "Plugins de autenticação não permitidos neste contexto",
+    "batch_create_success": "Batch: {count} plugins criados."
   },
   "consumers": {
     "title": "Consumers",
+    "entity": "Consumer",
     "username": "Username",
     "custom_id": "Custom ID",
-    "credentials": "Credenciais",
-    "groups": "Grupos ACL"
+    "credentials_label": "Credenciais",
+    "groups": "Grupos ACL",
+    "create_success": "Consumer criado",
+    "update_success": "Consumer atualizado",
+    "delete_success": "Consumer deletado",
+    "delete_confirm": "Deletar consumer {name}?",
+    "empty_state": "Nenhum consumer encontrado",
+    "details_title": "Detalhes do Consumer",
+    "acls": {
+      "title": "ACLs",
+      "group": "Grupo",
+      "add_success": "ACL adicionada",
+      "update_success": "ACL atualizada",
+      "delete_confirm": "Remover grupo {group}?"
+    },
+    "credentials": {
+      "title": "Credenciais",
+      "add_success": "Credencial adicionada",
+      "update_success": "Credencial atualizada",
+      "delete_confirm": "Remover credencial?",
+      "empty": "Nenhuma credencial"
+    }
+  },
+  "upstreams": {
+    "title": "Upstreams",
+    "entity": "Upstream",
+    "algorithm": "Algoritmo",
+    "slots": "Slots",
+    "create_success": "Upstream criado",
+    "update_success": "Upstream atualizado",
+    "delete_confirm": "Deletar upstream?",
+    "targets_title": "Targets",
+    "target": "Alvo",
+    "weight": "Peso",
+    "health": "Saúde",
+    "add_target_success": "Target adicionado",
+    "delete_target_confirm": "Deletar target?",
+    "empty_state": "Nenhum upstream econtrado",
+    "targets_empty": "Nenhum target encontrado"
+  },
+  "certificates": {
+    "title": "Certificados",
+    "entity": "Certificado",
+    "sni": "SNIs",
+    "cert": "Certificado",
+    "key": "Chave",
+    "create_success": "Certificado criado",
+    "update_success": "Certificado atualizado",
+    "delete_confirm": "Deletar certificado?",
+    "empty_state": "Nenhum certificado encontrado"
   },
   "connection": {
     "title": "Conexão",
@@ -104,12 +223,19 @@
     "status": "Status",
     "connected": "Conectado",
     "disconnected": "Desconectado",
-    "version": "Versão"
+    "version": "Versão",
+    "runtime_config_title": "Configuração em Tempo de Execução",
+    "runtime_config_desc": "Mudanças são aplicadas imediatamente mas perdem-se ao reiniciar o backend."
   },
   "errors": {
     "required": "Campo obrigatório",
     "invalid_url": "URL inválida",
     "min_length": "Mínimo {min} caracteres",
-    "max_length": "Máximo {max} caracteres"
+    "max_length": "Máximo {max} caracteres",
+    "name_host_required": "Nome e Host obrigatórios",
+    "consumer_id_required": "Username ou Custom ID obrigatório",
+    "group_required": "Grupo é obrigatório",
+    "target_required": "Alvo é obrigatório",
+    "plugin_required": "Selecione um plugin"
   }
 }

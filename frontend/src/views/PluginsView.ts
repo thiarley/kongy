@@ -3,6 +3,7 @@
  * Handles plugin management for routes, services and consumers
  */
 import { api } from '../services/api';
+import { i18n } from '../services/i18n';
 import { UI } from '../ui';
 import { store } from '../store';
 import { showToast, setBusy, getPluginIcon } from '../utils';
@@ -17,7 +18,7 @@ export async function populatePluginSelect() {
     const modal = document.getElementById('pluginsModal');
     const entityType = modal?.dataset.entityType;
 
-    select.innerHTML = '<option value="">Selecione um plugin...</option>';
+    select.innerHTML = `<option value="">${i18n.t('plugins.select_placeholder')}</option>`;
 
     try {
         const { enabled_plugins } = await api.getAvailablePlugins();
@@ -51,7 +52,7 @@ export async function loadRoutePlugins(ui: UI, route: any) {
                 refreshRoutes();
             },
             onDelete: async (id: string) => {
-                if (await confirmAction('Deletar plugin?')) {
+                if (await confirmAction(i18n.t('plugins.delete_confirm'))) {
                     await api.deletePlugin(id);
                     refreshRoutes();
                     setTimeout(() => loadRoutePlugins(ui, route), 500);
@@ -76,7 +77,7 @@ export async function loadServicePlugins(ui: UI, svc: any) {
                 loadServicePlugins(ui, svc);
             },
             onDelete: async (id: string) => {
-                if (await confirmAction('Deletar plugin do serviço?')) {
+                if (await confirmAction(i18n.t('plugins.delete_confirm'))) {
                     await api.deletePlugin(id);
                     loadServicePlugins(ui, svc);
                 }
@@ -97,7 +98,7 @@ export async function handleAddPlugin(ui: UI) {
     if (!modal || !select) return;
 
     const pluginName = select.value;
-    if (!pluginName) return showToast('Selecione um plugin', 'warning');
+    if (!pluginName) return showToast(i18n.t('errors.plugin_required'), 'warning');
 
     try {
         const schema = await api.getPluginSchema(pluginName);
@@ -110,7 +111,7 @@ export async function handleAddPlugin(ui: UI) {
 
 export function handleBatchPlugin(ui: UI) {
     const ids = store.selectedIds;
-    if (ids.length === 0) return showToast('Selecione rotas', 'warning');
+    if (ids.length === 0) return showToast(i18n.t('routes.select_warning'), 'warning');
 
     ui.openModal('pluginsModal');
     const modal = document.getElementById('pluginsModal');
@@ -178,7 +179,7 @@ export async function handleSavePluginConfig(ui: UI) {
         try {
             Object.assign(config, JSON.parse(jsonBlob));
         } catch (e) {
-            return showToast('JSON Inválido', 'error');
+            return showToast(i18n.t('messages.json_invalid'), 'error');
         }
     }
 
@@ -205,7 +206,7 @@ export async function handleSavePluginConfig(ui: UI) {
         }
 
         setBusy(modal, false);
-        showToast(`Batch: ${success} plugins criados.`, 'success');
+        showToast(i18n.t('plugins.batch_create_success', { count: success }), 'success');
         ui.closeModal('pluginConfigModal');
         ui.closeModal('pluginsModal');
         refreshRoutes();
@@ -228,7 +229,7 @@ export async function handleSavePluginConfig(ui: UI) {
         try {
             await api.createPlugin(payload);
 
-            showToast('Plugin criado', 'success');
+            showToast(i18n.t('plugins.create_success'), 'success');
             ui.closeModal('pluginConfigModal');
 
             if (entityType === 'route') {
@@ -250,7 +251,7 @@ export async function handleSavePluginConfig(ui: UI) {
         // UPDATE
         try {
             await api.updatePlugin(pluginId, { config });
-            showToast('Plugin atualizado', 'success');
+            showToast(i18n.t('plugins.update_success'), 'success');
             ui.closeModal('pluginConfigModal');
             refreshRoutes();
         } catch (e: any) {
