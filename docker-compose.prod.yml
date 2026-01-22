@@ -1,0 +1,70 @@
+version: '3.8'
+
+# =============================================================================
+# Kongy - Kong Gateway Manager
+# Production Environment (connects to existing Kong)
+# =============================================================================
+
+services:
+  # ============================================
+  # Frontend (Nginx serving static files)
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - kongy-net
+    restart: unless-stopped
+    # Security: read-only filesystem
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ============================================
+  # Backend (FastAPI)
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - KONG_ADMIN_URL=${KONG_ADMIN_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=false
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:8080"]}
+    networks:
+      - kongy-net
+      - kong-net # Connect to existing Kong network
+    restart: unless-stopped
+    # Security: read-only filesystem
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  kongy-net:
+    driver: bridge
+  kong-net:
+    external: true # Connect to existing Kong network

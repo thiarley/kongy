@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kongy - Login</title>
+    <meta name="description" content="Kongy - Kong Gateway Manager - Login">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/regular/style.min.css">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 2.5rem;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-logo {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 0.5rem;
+        }
+
+        .login-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 0.875rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        .login-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        .login-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--accent-red);
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+
+        .setup-notice {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: var(--accent-blue);
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .locale-selector {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+
+        .locale-select {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+    </style>
+  <script type="module" crossorigin src="/assets/login-DChUcHm2.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/auth-_lKN4eLn.js">
+  <link rel="stylesheet" crossorigin href="/assets/auth-C88hot9s.css">
+</head>
+
+<body>
+    <!-- Locale Selector -->
+    <div class="locale-selector">
+        <select id="locale-select" class="locale-select" aria-label="Select language">
+            <option value="pt-BR">Português</option>
+            <option value="en-US">English</option>
+        </select>
+    </div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Header -->
+            <div class="login-header">
+                <div class="login-logo">🦍</div>
+                <h1 class="login-title" id="login-title-text" data-i18n="app.title">Kongy</h1>
+                <p class="login-subtitle" id="login-subtitle" data-i18n="auth.login_title">Acesso ao Kongy</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="error-message" class="error-message" role="alert"></div>
+
+            <!-- Setup Notice (shown when first setup is needed) -->
+            <div id="setup-notice" class="setup-notice" style="display: none;">
+                <i class="ph ph-info"></i>
+                <span data-i18n="auth.setup_description">Configure o usuário administrador para começar.</span>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label" for="username" data-i18n="auth.username">Usuário</label>
+                    <input type="text" id="username" name="username" class="form-input"
+                        data-i18n-placeholder="auth.username" placeholder="Usuário" required autocomplete="username"
+                        autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password" data-i18n="auth.password">Senha</label>
+                    <input type="password" id="password" name="password" class="form-input"
+                        data-i18n-placeholder="auth.password" placeholder="Senha" required
+                        autocomplete="current-password" minlength="8">
+                </div>
+
+                <button type="submit" id="submit-btn" class="login-button">
+                    <span id="btn-text" data-i18n="auth.login_button">Entrar</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+</body>
+
+</html>

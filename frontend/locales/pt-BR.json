@@ -1,0 +1,115 @@
+{
+  "app": {
+    "title": "Kongy",
+    "subtitle": "Gerenciador de Gateway Kong"
+  },
+  "auth": {
+    "login": "Entrar",
+    "logout": "Sair",
+    "username": "Usuário",
+    "password": "Senha",
+    "setup_title": "Configuração Inicial",
+    "setup_description": "Configure o usuário administrador para começar a usar o Kongy.",
+    "setup_button": "Criar Usuário",
+    "login_title": "Acesso ao Kongy",
+    "login_button": "Entrar",
+    "login_error": "Credenciais inválidas",
+    "rate_limit_error": "Muitas tentativas. Aguarde alguns minutos.",
+    "session_expired": "Sessão expirada. Faça login novamente."
+  },
+  "nav": {
+    "services": "Serviços",
+    "routes": "Rotas",
+    "plugins": "Plugins",
+    "consumers": "Consumers",
+    "upstreams": "Upstreams",
+    "certificates": "Certificados"
+  },
+  "actions": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "new": "Novo",
+    "refresh": "Atualizar",
+    "apply": "Aplicar",
+    "export": "Exportar",
+    "import": "Importar",
+    "connect": "Conectar",
+    "disconnect": "Desconectar",
+    "select_all": "Selecionar Todos",
+    "deselect_all": "Desmarcar Todos",
+    "close": "Fechar",
+    "confirm": "Confirmar",
+    "back": "Voltar"
+  },
+  "messages": {
+    "success": "Operação realizada com sucesso",
+    "error": "Erro ao processar operação",
+    "confirm_delete": "Tem certeza que deseja excluir?",
+    "confirm_delete_multiple": "Tem certeza que deseja excluir {count} itens?",
+    "loading": "Carregando...",
+    "no_data": "Nenhum dado encontrado",
+    "connection_error": "Erro de conexão com o servidor",
+    "kong_unavailable": "Kong Admin API indisponível",
+    "saved": "Salvo com sucesso",
+    "deleted": "Excluído com sucesso",
+    "copied": "Copiado para a área de transferência"
+  },
+  "services": {
+    "title": "Serviços",
+    "name": "Nome",
+    "host": "Host",
+    "port": "Porta",
+    "protocol": "Protocolo",
+    "path": "Path",
+    "routes_count": "Rotas",
+    "plugins_count": "Plugins"
+  },
+  "routes": {
+    "title": "Rotas",
+    "name": "Nome",
+    "paths": "Paths",
+    "methods": "Métodos",
+    "protocols": "Protocolos",
+    "hosts": "Hosts",
+    "headers": "Headers",
+    "strip_path": "Strip Path",
+    "preserve_host": "Preserve Host",
+    "tags": "Tags",
+    "regex_priority": "Prioridade Regex",
+    "service": "Serviço"
+  },
+  "plugins": {
+    "title": "Plugins",
+    "name": "Nome",
+    "enabled": "Habilitado",
+    "disabled": "Desabilitado",
+    "config": "Configuração",
+    "apply_batch": "Aplicar em Lote",
+    "select_plugin": "Selecionar Plugin",
+    "no_plugins": "Nenhum plugin configurado"
+  },
+  "consumers": {
+    "title": "Consumers",
+    "username": "Username",
+    "custom_id": "Custom ID",
+    "credentials": "Credenciais",
+    "groups": "Grupos ACL"
+  },
+  "connection": {
+    "title": "Conexão",
+    "kong_url": "URL do Kong Admin",
+    "status": "Status",
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "version": "Versão"
+  },
+  "errors": {
+    "required": "Campo obrigatório",
+    "invalid_url": "URL inválida",
+    "min_length": "Mínimo {min} caracteres",
+    "max_length": "Máximo {max} caracteres"
+  }
+}

@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kongy - Kong Gateway Manager</title>
+    <meta name="description" content="Gerenciador visual de rotas e plugins para Kong Gateway">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/regular/style.min.css">
+
+    <style>
+        /* Batch Mode Overrides */
+        .batch-only {
+            display: none;
+        }
+
+        .mode-batch .batch-only {
+            display: flex !important;
+        }
+
+        .mode-batch .hidden {
+            display: none !important;
+        }
+
+        /* Group Box Styling */
+        .form-group-box {
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            transition: all 0.2s;
+        }
+
+        .form-group-box:focus-within {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Disabled State in Batch */
+        .batch-disabled {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: transparent;
+        }
+
+        .batch-disabled>*:not(.group-header) {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
+
+        /* Ensure generic hidden works */
+    </style>
+
+    <!-- Icons (Phosphor) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- UI Libraries -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- App Entry -->
+    <script type="module" src="/src/main.ts"></script>
+    </body>
+
+</html>
+<div id="view-loading" class="glass-panel"
+    style="max-width: 400px; margin: 100px auto; padding: 40px; text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 10px;">🦍</div>
+    <h1>Kongy</h1>
+    <p class="text-muted" style="margin-bottom: 30px;">Verificando autenticação...</p>
+    <span class="spinner"></span>
+</div>
+
+<!-- ==================== Service Selection View ==================== -->
+<!-- ==================== App Layout (Global) ==================== -->
+<div id="app-layout" class="app-container hidden">
+
+    <!-- Global Sidebar -->
+    <nav class="sidebar">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 30px;">
+            <span style="font-size: 1.5rem;">🦍</span>
+            <span style="font-weight: 700;">Kongy</span>
+        </div>
+
+        <!-- Service Context Badge (Hidden by default) -->
+        <div id="sidebarServiceContext" class="glass-panel hidden"
+            style="padding: 10px; margin-bottom: 20px; border-left: 3px solid var(--primary);">
+            <div class="text-muted small">Serviço Atual</div>
+            <div class="fw-bold text-truncate" id="currentServiceBadge" style="font-size: 0.85rem;">...</div>
+            <div style="display:flex; gap: 5px; margin-top: 8px;">
+                <button id="servicePluginsBtn" class="btn btn-sm btn-nav-action"
+                    style="width:auto; padding: 2px 8px; font-size: 0.75rem; flex: 1;" title="Plugins do Serviço">
+                    <i class="ph ph-plugs"></i> Plugins
+                </button>
+                <button id="closeServiceContextBtn" class="btn btn-sm" style="width:auto; padding: 2px 6px;"
+                    title="Sair do contexto">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <div style="display:flex; flex-direction:column; gap: 5px; flex: 1;">
+            <button class="btn btn-nav active" data-view="services">
+                <i class="ph ph-squares-four"></i> <span>Serviços</span>
+            </button>
+            <button class="btn btn-nav" id="navRoutesBtn" data-view="routes">
+                <i class="ph ph-path"></i> <span>Rotas</span>
+            </button>
+            <button class="btn btn-nav" data-view="consumers">
+                <i class="ph ph-users"></i> <span>Consumers</span>
+            </button>
+            <button class="btn btn-nav" data-view="upstreams">
+                <i class="ph ph-flow-arrow"></i> <span>Upstreams</span>
+            </button>
+            <button class="btn btn-nav" data-view="certificates">
+                <i class="ph ph-certificate"></i> <span>Certificados</span>
+            </button>
+        </div>
+
+        <!-- Footer Actions -->
+        <div style="margin-top: 20px;">
+            <button id="settingsBtn" class="btn btn-secondary"
+                style="width: 100%; justify-content: center; margin-bottom: 10px;" title="Configurações">
+                <i class="ph ph-gear"></i> Configurações
+            </button>
+            <button id="logoutBtn" class="btn btn-danger" style="width: 100%; justify-content: center;">
+                <i class="ph ph-sign-out"></i> Sair
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+        <!-- View: Dashboard -->
+        <div id="view-dashboard" class="view-section">
+            <div class="mb-4 flex items-center justify-between">
+                <h1 class="m-0">Dashboard</h1>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <span id="kongVersionBadge" class="badge badge-secondary" style="font-size: 0.9rem;">Kong
+                        Wait...</span>
+                    <button class="btn btn-icon" id="refreshDashboardBtn"><i
+                            class="ph ph-arrows-clockwise"></i></button>
+                </div>
+            </div>
+
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <!-- Stat Card: Total Requests -->
+                <div class="glass-panel" style="padding: 20px; display: flex; align-items: center; gap: 15px;">
+                    <div class="icon-circle"
+                        style="background: rgba(99, 102, 241, 0.2); color: #818cf8; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                        <i class="ph ph-chart-bar"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Total Requests</div>
+                        <div class="fw-bold" style="font-size: 1.5rem;" id="dashTotalRequests">-</div>
+                    </div>
+                </div>
+
+                <!-- Stat Card: Active Services -->
+                <div class="glass-panel" style="padding: 20px; display: flex; align-items: center; gap: 15px;">
+                    <div class="icon-circle"
+                        style="background: rgba(16, 185, 129, 0.2); color: #34d399; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                        <i class="ph ph-squares-four"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Services</div>
+                        <div class="fw-bold" style="font-size: 1.5rem;" id="dashActiveServices">-</div>
+                    </div>
+                </div>
+
+                <!-- Stat Card: Routes -->
+                <div class="glass-panel" style="padding: 20px; display: flex; align-items: center; gap: 15px;">
+                    <div class="icon-circle"
+                        style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                        <i class="ph ph-path"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Routes</div>
+                        <div class="fw-bold" style="font-size: 1.5rem;" id="dashTotalRoutes">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4">
+                <h3 class="mb-3">Node Status</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label class="text-muted small d-block">Hostname</label>
+                        <div class="fw-bold" id="dashHostname">-</div>
+                    </div>
+                    <div>
+                        <label class="text-muted small d-block">Lua Version</label>
+                        <div class="fw-bold" id="dashLuaVersion">-</div>
+                    </div>
+                    <div>
+                        <label class="text-muted small d-block">Plugins Enabled</label>
+                        <div class="fw-bold" id="dashPluginsCount">-</div>
+                    </div>
+                    <div>
+                        <label class="text-muted small d-block">Configuration</label>
+                        <div class="fw-bold" id="dashAdminListen">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Services List -->
+        <div id="view-services" class="view-section">
+            <div
+                style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; justify-content: space-between;">
+                <h1 style="margin: 0;">Serviços</h1>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-icon" id="refreshServicesBtn" title="Atualizar"><i
+                            class="ph ph-arrows-clockwise"></i></button>
+                    <button class="btn btn-primary" id="addServiceBtn"><i class="ph ph-plus"></i> Novo
+                        Serviço</button>
+                </div>
+            </div>
+            <div class="glass-panel" style="width: 100%; flex: 1; padding: 30px; overflow-y: auto;">
+                <div id="serviceList" class="service-list-grid"><!-- Injected --></div>
+                <div id="serviceLoading" class="text-center text-muted hidden" style="margin-top:20px;">
+                    <span class="spinner"></span> Carregando...
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Routes (Contextual) -->
+        <div id="view-routes" class="view-section hidden">
+            <!-- Toolbar -->
+            <header class="glass-panel toolbar">
+                <div style="display:flex; align-items:center; gap: 15px;">
+                    <h2 class="text-white" id="pageTitle">Rotas</h2>
+                    <input type="text" id="routeSearch" class="search-input" placeholder="Pesquisar...">
+                </div>
+                <div style="display:flex; gap: 10px;" id="routeActions">
+                    <button class="btn btn-icon" id="refreshRoutesBtn"><i class="ph ph-arrows-clockwise"></i></button>
+                    <button class="btn btn-primary" id="addRouteBtn"><i class="ph ph-plus"></i> Nova</button>
+                    <button class="btn btn-secondary" id="loadFileBtn"><i class="ph ph-file-arrow-up"></i>
+                        Carregar</button>
+                    <button class="btn btn-secondary" id="exportRoutesBtn"><i class="ph ph-file-arrow-down"></i>
+                        Exportar</button>
+                    <input type="file" id="routeFileInput" accept=".json" style="display: none;">
+                    <div style="width: 1px; background: var(--border-glass);"></div>
+                    <button class="btn btn-primary" id="batchEditBtn" disabled><i class="ph ph-pencil-simple"></i>
+                        Editar Lote</button>
+                    <button class="btn btn-warning" id="pluginBatchBtn" disabled><i class="ph ph-plugs"></i>
+                        Plugin</button>
+
+                    <button class="btn btn-danger" id="deleteSelectedBtn" disabled><i class="ph ph-trash"></i></button>
+                </div>
+            </header>
+
+            <!-- Stats -->
+            <div id="statsBar" class="glass-panel" style="padding: 15px 25px;">
+                <div id="routeStats">-</div>
+            </div>
+
+            <!-- Table -->
+            <div class="glass-panel table-container" style="flex: 1;">
+                <table class="table" id="routesTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px"><input type="checkbox" id="selectAllRoutes"></th>
+                            <th>Nome / ID</th>
+                            <th>Endpoint / Métodos</th>
+                            <th class="text-center">Host</th>
+                            <th class="text-center">Strip</th>
+                            <th>Tags / Plugins</th>
+                            <th>Fonte</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- View: Consumers (Global) -->
+        <div id="view-consumers" class="view-section hidden">
+            <div
+                style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; justify-content: space-between;">
+                <h1 style="margin: 0;">Consumers</h1>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-icon" id="refreshConsumersBtn" title="Atualizar"><i
+                            class="ph ph-arrows-clockwise"></i></button>
+                    <button class="btn btn-primary" id="addConsumerBtn"><i class="ph ph-plus"></i> Novo
+                        Consumer</button>
+                </div>
+            </div>
+            <!-- Search Bar -->
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="consumerSearch" class="search-input" placeholder="Buscar consumer...">
+            </div>
+            <div class="glass-panel table-container" style="flex: 1;">
+                <table class="table" id="consumersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Custom ID</th>
+                            <th>Tags</th>
+                            <th>Criado em</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- View: Consumer Details -->
+        <div id="view-consumer-details" class="view-section hidden">
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-secondary btn-sm" id="backToConsumersBtn" style="margin-bottom: 10px;">
+                    <i class="ph ph-arrow-left"></i> Voltar para Consumers
+                </button>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div class="glass-panel" style="padding: 10px; border-radius: 50%;">
+                            <i class="ph ph-user" style="font-size: 24px;"></i>
+                        </div>
+                        <div>
+                            <h2 style="margin: 0;" id="consumerDetailsName">Loading...</h2>
+                            <span class="text-muted small" id="consumerDetailsId">...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-target="tab-consumer-details">Detalhes</button>
+                <button class="tab-btn" data-target="tab-consumer-groups">Grupos</button>
+                <button class="tab-btn" data-target="tab-consumer-credentials">Credenciais</button>
+                <button class="tab-btn" data-target="tab-consumer-plugins">Plugins</button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="glass-panel p-4" style="flex: 1; overflow-y: auto;">
+
+                <!-- Details Tab -->
+                <div id="tab-consumer-details" class="tab-content">
+                    <div style="max-width: 600px;">
+                        <div class="form-group">
+                            <label>Nome de Usuário</label>
+                            <input type="text" id="edit_consumer_username" class="form-control">
+                            <small class="text-muted">O username do consumer (semi-opcional se custom_id for
+                                fornecido)</small>
+                        </div>
+                        <div class="form-group">
+                            <label>ID Personalizado</label>
+                            <input type="text" id="edit_consumer_custom_id" class="form-control">
+                            <small class="text-muted">ID externo para mapeamento (semi-opcional se username for
+                                fornecido)</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Tags (separar por vírgula)</label>
+                            <input type="text" id="edit_consumer_tags" class="form-control">
+                        </div>
+                        <button class="btn btn-primary" id="updateConsumerBtn">
+                            <i class="ph ph-check"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Groups Tab -->
+                <div id="tab-consumer-groups" class="tab-content hidden">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <h3>Grupos ACL</h3>
+                        <button class="btn btn-primary btn-sm" id="addAclBtn"><i class="ph ph-plus"></i> Adicionar
+                            Grupo</button>
+                    </div>
+                    <table class="table" id="consumerAclTable">
+                        <thead>
+                            <tr>
+                                <th>Nome do Grupo</th>
+                                <th>Criado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Credentials Tab -->
+                <div id="tab-consumer-credentials" class="tab-content hidden">
+                    <div style="margin-bottom: 15px;">
+                        <div class="tabs credential-tabs"
+                            style="margin-bottom: 15px; border-bottom: 1px solid var(--border-glass);">
+                            <button class="tab-btn active" data-cred="basic-auth">Basic Auth</button>
+                            <button class="tab-btn" data-cred="key-auth">API Keys</button>
+                            <button class="tab-btn" data-cred="jwt">JWT</button>
+                            <button class="tab-btn" data-cred="hmac-auth">HMAC</button>
+                            <button class="tab-btn" data-cred="oauth2">OAuth2</button>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button class="btn btn-primary btn-sm" id="addCredentialBtn"><i class="ph ph-plus"></i>
+                                Criar Credencial</button>
+                        </div>
+                    </div>
+                    <table class="table" id="consumerCredentialsTable">
+                        <thead>
+                            <tr>
+                                <th>Detalhes</th>
+                                <th>Criado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Plugins Tab -->
+                <div id="tab-consumer-plugins" class="tab-content hidden">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <h3>Plugins do Consumer</h3>
+                        <button class="btn btn-primary btn-sm" id="addConsumerPluginBtn"><i class="ph ph-plus"></i>
+                            Adicionar Plugin</button>
+                    </div>
+                    <table class="table" id="consumerPluginsTable">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Status</th>
+                                <th>Criado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- View: Upstreams (Global) -->
+        <div id="view-upstreams" class="view-section hidden">
+            <div
+                style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; justify-content: space-between;">
+                <h1 style="margin: 0;">Upstreams</h1>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-icon" id="refreshUpstreamsBtn" title="Atualizar"><i
+                            class="ph ph-arrows-clockwise"></i></button>
+                    <button class="btn btn-primary" id="addUpstreamBtn"><i class="ph ph-plus"></i> Novo
+                        Upstream</button>
+                </div>
+            </div>
+            <div class="glass-panel table-container" style="flex: 1;">
+                <table class="table" id="upstreamsTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Algoritmo</th>
+                            <th>Slots</th>
+                            <th>Health Checks</th>
+                            <th>Targets</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- View: Certificates (Global) -->
+        <div id="view-certificates" class="view-section hidden">
+            <div
+                style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; justify-content: space-between;">
+                <h1 style="margin: 0;">Certificados</h1>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-icon" id="refreshCertificatesBtn" title="Atualizar"><i
+                            class="ph ph-arrows-clockwise"></i></button>
+                    <button class="btn btn-primary" id="addCertificateBtn"><i class="ph ph-plus"></i> Novo
+                        Certificado</button>
+                </div>
+            </div>
+            <div class="glass-panel table-container" style="flex: 1;">
+                <table class="table" id="certificatesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>SNIs</th>
+                            <th>Tags</th>
+                            <th>Criado em</th>
+                            <th style="width: 100px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+
+
+<!-- ==================== Edit Route Modal ==================== -->
+<div id="editModal" class="modal hidden">
+    <div class="modal-content glass-panel" style="width: 600px;">
+        <div class="modal-header">
+            <h3 id="editModalTitle">Editar Rota</h3>
+            <button class="btn-icon close-modal"><i class="ph ph-x"></i></button>
+        </div>
+
+        <div class="tabs" style="margin-bottom: 15px; border-bottom: 1px solid var(--border-glass);">
+            <button class="tab-btn active" data-target="tab-form">Formulário</button>
+            <button class="tab-btn" data-target="tab-json">JSON</button>
+        </div>
+
+        <div id="tab-form" class="tab-content">
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+
+                <!-- Nome (Sempre Disabled em Batch) -->
+                <div class="form-group">
+                    <label>Nome</label>
+                    <input type="text" id="input_name" class="form-control" placeholder="nome-da-rota">
+                    <small class="text-muted batch-only hidden">Nome não pode ser alterado em lote</small>
+                </div>
+
+                <!-- Paths Group -->
+                <div class="form-group-box form-group">
+                    <div class="group-header">
+                        <label>Caminhos</label>
+                        <label class="checkbox-label batch-only hidden">
+                            <input type="checkbox" class="batch-field-check" data-target="paths"> Alterar
+                        </label>
+                    </div>
+                    <input type="text" id="input_paths" class="form-control input-target"
+                        placeholder="/v1/api, /v2/api">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <!-- Methods Group -->
+                    <div class="form-group-box form-group">
+                        <div class="group-header">
+                            <label>Métodos</label>
+                            <label class="checkbox-label batch-only hidden">
+                                <input type="checkbox" class="batch-field-check" data-target="methods"> Alterar
+                            </label>
+                        </div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;" id="methodChecks" class="input-target">
+                            <label class="checkbox-label"><input type="checkbox" value="GET"> GET</label>
+                            <label class="checkbox-label"><input type="checkbox" value="POST"> POST</label>
+                            <label class="checkbox-label"><input type="checkbox" value="PUT"> PUT</label>
+                            <label class="checkbox-label"><input type="checkbox" value="DELETE"> DEL</label>
+                            <label class="checkbox-label"><input type="checkbox" value="PATCH"> PATCH</label>
+                            <label class="checkbox-label"><input type="checkbox" value="OPTIONS"> OPTIONS</label>
+                        </div>
+                    </div>
+
+                    <!-- Options Group -->
+                    <div class="form-group-box form-group">
+                        <div class="group-header">
+                            <label>Opções</label>
+                            <label class="checkbox-label batch-only hidden">
+                                <input type="checkbox" class="batch-field-check" data-target="options"> Alterar
+                            </label>
+                        </div>
+                        <div style="display:flex; gap:15px; margin-top:5px;" class="input-target-container">
+                            <label class="checkbox-label"><input type="checkbox" id="input_strip_path" checked
+                                    class="input-target"> Strip Path</label>
+                            <label class="checkbox-label"><input type="checkbox" id="input_preserve_host"
+                                    class="input-target"> Preserve Host</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tags Group -->
+                <div class="form-group-box form-group">
+                    <div class="group-header">
+                        <label>Tags</label>
+                        <label class="checkbox-label batch-only hidden">
+                            <input type="checkbox" class="batch-field-check" data-target="tags"> Alterar
+                        </label>
+                    </div>
+                    <input type="text" id="input_tags" class="form-control input-target" placeholder="publico, api-v1">
+                </div>
+
+            </div>
+        </div>
+
+        <div id="tab-json" class="tab-content hidden">
+            <textarea id="jsonEditor" class="form-control"
+                style="height: 300px; font-family: 'JetBrains Mono', monospace;"></textarea>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn close-modal">Cancelar</button>
+            <button class="btn btn-primary" id="saveRouteBtn">Salvar</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ==================== Unified Plugins Modal ==================== -->
+<div id="pluginsModal" class="modal hidden" data-entity-type="" data-entity-id="">
+    <div class="modal-content glass-panel" style="width: 700px; max-height: 85vh;">
+        <div class="modal-header">
+            <div>
+                <h3 id="pluginsTitle">Plugins</h3>
+                <span id="pluginsEntityName" class="text-muted small"></span>
+            </div>
+            <button class="btn-icon close-modal"><i class="ph ph-x"></i></button>
+        </div>
+
+        <!-- Plugin List -->
+        <div id="pluginsList" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">
+            <div class="text-muted text-center p-4">Carregando plugins...</div>
+        </div>
+
+        <!-- Add Plugin Section -->
+        <div class="glass-panel" style="padding: 15px; border-radius: 8px; background: rgba(99, 102, 241, 0.1);">
+            <h4 style="margin: 0 0 15px 0; font-size: 0.95rem;">
+                <i class="ph ph-plus"></i> Adicionar Plugin
+            </h4>
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div class="form-group" style="flex: 1; margin: 0;">
+                    <label>Plugin</label>
+                    <select id="pluginSelect" class="form-control">
+                        <option value="">Selecione um plugin...</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="addPluginBtn">
+                    <i class="ph ph-plus"></i> Adicionar
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn close-modal">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Plugin Config Modal ==================== -->
+<div id="pluginConfigModal" class="modal hidden">
+    <div class="modal-content glass-panel" style="width: 550px;">
+        <div class="modal-header">
+            <div>
+                <h3 id="pluginConfigTitle">Configurar Plugin</h3>
+                <span id="pluginConfigName" class="text-muted small"></span>
+            </div>
+            <button class="btn-icon close-modal"><i class="ph ph-x"></i></button>
+        </div>
+
+        <div id="pluginConfigForm" style="max-height: 400px; overflow-y: auto;">
+            <!-- Dynamic form fields -->
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn close-modal">Cancelar</button>
+            <button class="btn btn-primary" id="savePluginConfigBtn">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Service Modal ==================== -->
+<div id="serviceModal" class="modal hidden">
+    <div class="modal-content glass-panel" style="width: 600px;">
+        <div class="modal-header">
+            <h3 id="serviceModalTitle">Novo Serviço</h3>
+            <button class="btn-icon close-modal"><i class="ph ph-x"></i></button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Nome <span class="text-danger">*</span></label>
+                <input type="text" id="svc_name" class="form-control" placeholder="meu-servico">
+            </div>
+
+            <div class="form-group">
+                <label>Protocolo</label>
+                <select id="svc_protocol" class="form-control">
+                    <option value="http">http</option>
+                    <option value="https">https</option>
+                    <option value="grpc">grpc</option>
+                    <option value="grpcs">grpcs</option>
+                    <option value="tcp">tcp</option>
+                    <option value="tls">tls</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Host <span class="text-danger">*</span></label>
+                <input type="text" id="svc_host" class="form-control" placeholder="api.example.com">
+            </div>
+
+            <div class="form-group">
+                <label>Porta</label>
+                <input type="number" id="svc_port" class="form-control" value="80" min="1" max="65535">
+            </div>
+
+            <div class="form-group">
+                <label>Caminho (Path)</label>
+                <input type="text" id="svc_path" class="form-control" placeholder="/api/v1">
+            </div>
+
+            <div class="form-group">
+                <label>Retries</label>
+                <input type="number" id="svc_retries" class="form-control" value="5" min="0" max="32767">
+            </div>
+
+            <div class="form-group">
+                <label>Connect Timeout (ms)</label>
+                <input type="number" id="svc_connect_timeout" class="form-control" value="60000">
+            </div>
+
+            <div class="form-group">
+                <label>Write Timeout (ms)</label>
+                <input type="number" id="svc_write_timeout" class="form-control" value="60000">
+            </div>
+
+            <div class="form-group">
+                <label>Read Timeout (ms)</label>
+                <input type="number" id="svc_read_timeout" class="form-control" value="60000">
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Tags (separar por vírgula)</label>
+                <input type="text" id="svc_tags" class="form-control" placeholder="producao, api-v1">
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn close-modal">Cancelar</button>
+            <button class="btn btn-primary" id="saveServiceBtn">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Consumer Modal ==================== -->
+<div id="consumerModal" class="modal hidden">
+    <div class="modal-content glass-panel" style="width: 500px;">
+        <div class="modal-header">
+            <h3 id="consumerModalTitle">Novo Consumer</h3>
+            <button class="btn-icon close-modal"><i class="ph ph-x"></i></button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="consumer_username" class="form-control" placeholder="meu-consumer">
+                <small class="text-muted">Username ou Custom ID é obrigatório</small>
+            </div>
+            <div class="form-group">
+                <label>Custom ID</label>
+                <input type="text" id="consumer_custom_id" class="form-control" placeholder="12345">
+            </div>
+            <div class="form-group">
+                <label>Tags (separar por vírgula)</label>
+                <input type="text" id="consumer_tags" class="form-control" placeholder="api, producao">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn close-modal">Cancelar</button>
+            <button class="btn btn-primary" id="saveConsumerBtn">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Upstream Modal ==================== -->
+<div id="upstreamModal" class="modal hidden">
+    <div class="modal-content glass-panel" style="width: 500px;">
+        <div class="modal-header">
+            <h3 id="upstreamModalTitle">Novo Upstream</h3>
+            <button class="btn-icon close-modal"><i class="ph ph-x"></i></button>
+        </div>
+
+        <input type="hidden" id="upstream_id">
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="form-group">
+                <label>Nome <span class="text-danger">*</span></label>
+                <input type="text" id="upstream_name" class="form-control" placeholder="meu-upstream">
+            </div>
+            <div class="form-group">
+                <label>Algoritmo</label>
+                <select id="upstream_algorithm" class="form-control">
+                    <option value="round-robin">Round Robin</option>
+                    <option value="consistent-hashing">Consistent Hashing</option>
+                    <option value="least-connections">Least Connections</option>
+                    <option value="latency">Latency</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Slots</label>
+                <input type="number" id="upstream_slots" class="form-control" value="10000" min="10" max="65536">
+            </div>
+            <div class="form-group">
+                <label>Tags (separar por vírgula)</label>
+                <input type="text" id="upstream_tags" class="form-control" placeholder="backend, api">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn close-modal">Cancelar</button>
+            <button class="btn btn-primary" id="saveUpstreamBtn">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Targets Modal ==================== -->
+<div id="targetsModal" class="modal hidden">
+    <div class="modal-content glass-panel" style="width: 700px;">
+        <div class="modal-header">
+            <h3>Targets de <span id="targetsModalUpstreamName"></span></h3>
+            <button class="btn-icon close-modal"><i class="ph ph-x"></i></button>
+        </div>
+
+        <input type="hidden" id="targets_upstream_id">
+
+        <!-- Form de Adicionar -->
+        <div class="p-4 bg-glass mb-4 rounded border border-white/10">
+            <h4 class="mb-3 text-sm font-bold text-white"><i class="ph ph-plus-circle"></i> Adicionar Target</h4>
+            <div class="flex gap-2 items-end">
+                <div class="form-group flex-1">
+                    <label class="text-xs mb-1 block text-muted">Alvo (Ex: 192.168.1.10:8000)</label>
+                    <input type="text" id="target_target" class="form-control form-control-sm" placeholder="ip:port">
+                </div>
+                <div class="form-group w-24">
+                    <label class="text-xs mb-1 block text-muted">Peso</label>
+                    <input type="number" id="target_weight" class="form-control form-control-sm" value="100">
+                </div>
+                <div class="form-group flex-1">
+                    <label class="text-xs mb-1 block text-muted">Tags</label>
+                    <input type="text" id="target_tags" class="form-control form-control-sm" placeholder="tag1, tag2">
+                </div>
+                <button class="btn btn-primary btn-sm h-9" id="addTargetBtn">Adicionar</button>
+            </div>
+        </div>
+
+        <!-- Tabela -->
+        <div class="overflow-y-auto" style="max-height: 400px;">
+            <table class="table table-sm w-full text-left" id="targetsTable">
+                <thead>
+                    <tr>
+                        <th>Alvo</th>
+                        <th>Peso</th>
+                        <th>Tags</th>
+                        <th>Status</th>
+                        <th style="width: 50px"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Certificate Modal ==================== -->
+<div id="certificateModal" class="modal hidden">
+    <div class="modal-content glass-panel" style="width: 600px;">
+        <div class="modal-header">
+            <h3 id="certificateModalTitle">Novo Certificado</h3>
+            <button class="btn-icon close-modal"><i class="ph ph-x"></i></button>
+        </div>
+
+        <input type="hidden" id="certificate_id">
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="form-group">
+                <label>Certificado (PEM) <span class="text-danger">*</span></label>
+                <textarea id="certificate_cert" class="form-control" rows="6"
+                    placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"></textarea>
+                <small class="text-muted">Cole o conteúdo do arquivo .crt ou .pem</small>
+            </div>
+            <div class="form-group">
+                <label>Chave Privada (PEM) <span class="text-danger">*</span></label>
+                <textarea id="certificate_key" class="form-control" rows="6"
+                    placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"></textarea>
+                <small class="text-muted">Cole o conteúdo do arquivo .key (RSA preferred)</small>
+            </div>
+            <div class="form-group">
+                <label>SNIs (separar por vírgula)</label>
+                <input type="text" id="certificate_snis" class="form-control" placeholder="example.com, *.example.com">
+                <small class="text-muted">Server Name Indication - domínios associados</small>
+            </div>
+            <div class="form-group">
+                <label>Tags (separar por vírgula)</label>
+                <input type="text" id="certificate_tags" class="form-control" placeholder="ssl, producao">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn close-modal">Cancelar</button>
+            <button class="btn btn-primary" id="saveCertificateBtn">Salvar</button>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+
+<!-- ==================== ACL Modal ==================== -->
+<div id="aclModal" class="modal hidden">
+    <div class="modal-content glass-panel" style="width: 400px;">
+        <div class="modal-header">
+            <h3>Add Group (ACL)</h3>
+            <button class="btn-icon close-modal"><i class="ph ph-x"></i></button>
+        </div>
+        <div class="form-group">
+            <label>Group Name <span class="text-danger">*</span></label>
+            <input type="text" id="acl_group" class="form-control" placeholder="admin">
+        </div>
+        <div class="modal-footer">
+            <button class="btn close-modal">Cancel</button>
+            <button class="btn btn-primary" id="saveAclBtn">Submit Group</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Credential Modal ==================== -->
+<div id="credentialModal" class="modal hidden">
+    <div class="modal-content glass-panel" style="width: 500px;">
+        <div class="modal-header">
+            <h3 id="credentialModalTitle">New Credential</h3>
+            <button class="btn-icon close-modal"><i class="ph ph-x"></i></button>
+        </div>
+        <div id="credentialUtils">
+            <!-- Helper text or selector could go here -->
+        </div>
+
+        <!-- Dynamic Fields Container -->
+        <div id="credentialFields" style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- Fields injected by JS -->
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn close-modal">Cancel</button>
+            <button class="btn btn-primary" id="saveCredentialBtn">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Scripts ==================== -->
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Connection Settings Modal -->
+<div id="settingsModal" class="modal hidden">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Configurações</h3>
+            <button class="icon-btn close-modal"><i class="ph ph-x"></i></button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-glass);">
+            <button class="tab-btn active" data-target="settings-general">
+                <i class="ph ph-plugs"></i> Conexão
+            </button>
+            <button class="tab-btn" data-target="settings-security">
+                <i class="ph ph-lock-key"></i> Segurança
+            </button>
+        </div>
+
+        <div class="modal-body">
+
+            <!-- Tab: General -->
+            <div id="settings-general" class="tab-content">
+                <form id="settingsForm">
+                    <div class="form-group-box">
+                        <label class="fw-bold mb-1">Kong Admin URL</label>
+                        <input type="text" id="conf_kong_url" class="form-control" placeholder="http://kong:8001">
+                        <small class="text-muted d-block mt-1" style="font-size: 0.85em;">
+                            Endereço acessível pelo container backend. Ex: <code>http://kong:8001</code> ou IP
+                            externo.
+                        </small>
+                    </div>
+                </form>
+
+                <div class="plugin-empty-state mt-3"
+                    style="padding: 15px; border: 1px dashed var(--info); background: rgba(59, 130, 246, 0.05); color: var(--text-secondary);">
+                    <i class="ph ph-info" style="font-size: 1.5rem; margin-bottom: 5px; color: var(--info);"></i>
+                    <p style="font-size: 0.9em; margin: 0;">Configuração em Tempo de Execução</p>
+                    <span style="font-size: 0.8em; opacity: 0.8;">Mudanças são aplicadas imediatamente mas perdem-se
+                        ao
+                        reiniciar o backend.</span>
+                </div>
+                <div class="modal-footer" style="padding: 0; margin-top: 20px; border: none;">
+                    <button class="btn btn-secondary close-modal">Cancelar</button>
+                    <button class="btn btn-primary" id="saveSettingsBtn">
+                        <i class="ph ph-check"></i> Salvar & Testar Conexão
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab: Security -->
+            <div id="settings-security" class="tab-content hidden">
+                <p class="text-muted small" style="margin-bottom: 15px;">
+                    Altere sua senha de acesso ao Kongy Admin.
+                </p>
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Senha Atual</label>
+                        <input type="password" id="currentPassword" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">Nova Senha</label>
+                        <input type="password" id="newPassword" class="form-control" minlength="8" required>
+                        <small class="text-muted">Mínimo 8 caracteres</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmar Nova Senha</label>
+                        <input type="password" id="confirmPassword" class="form-control" minlength="8" required>
+                    </div>
+                </form>
+                <div class="modal-footer" style="padding: 0; margin-top: 20px; border: none;">
+                    <button class="btn btn-secondary close-modal">Cancelar</button>
+                    <button class="btn btn-success" id="changePasswordBtn">
+                        <i class="ph ph-check"></i> Alterar Senha
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+
+
+</html>

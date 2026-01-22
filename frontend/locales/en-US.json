@@ -1,0 +1,115 @@
+{
+    "app": {
+        "title": "Kongy",
+        "subtitle": "Kong Gateway Manager"
+    },
+    "auth": {
+        "login": "Login",
+        "logout": "Logout",
+        "username": "Username",
+        "password": "Password",
+        "setup_title": "Initial Setup",
+        "setup_description": "Configure the admin user to start using Kongy.",
+        "setup_button": "Create User",
+        "login_title": "Kongy Login",
+        "login_button": "Sign In",
+        "login_error": "Invalid credentials",
+        "rate_limit_error": "Too many attempts. Please wait a few minutes.",
+        "session_expired": "Session expired. Please log in again."
+    },
+    "nav": {
+        "services": "Services",
+        "routes": "Routes",
+        "plugins": "Plugins",
+        "consumers": "Consumers",
+        "upstreams": "Upstreams",
+        "certificates": "Certificates"
+    },
+    "actions": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "create": "Create",
+        "new": "New",
+        "refresh": "Refresh",
+        "apply": "Apply",
+        "export": "Export",
+        "import": "Import",
+        "connect": "Connect",
+        "disconnect": "Disconnect",
+        "select_all": "Select All",
+        "deselect_all": "Deselect All",
+        "close": "Close",
+        "confirm": "Confirm",
+        "back": "Back"
+    },
+    "messages": {
+        "success": "Operation completed successfully",
+        "error": "Error processing operation",
+        "confirm_delete": "Are you sure you want to delete?",
+        "confirm_delete_multiple": "Are you sure you want to delete {count} items?",
+        "loading": "Loading...",
+        "no_data": "No data found",
+        "connection_error": "Server connection error",
+        "kong_unavailable": "Kong Admin API unavailable",
+        "saved": "Saved successfully",
+        "deleted": "Deleted successfully",
+        "copied": "Copied to clipboard"
+    },
+    "services": {
+        "title": "Services",
+        "name": "Name",
+        "host": "Host",
+        "port": "Port",
+        "protocol": "Protocol",
+        "path": "Path",
+        "routes_count": "Routes",
+        "plugins_count": "Plugins"
+    },
+    "routes": {
+        "title": "Routes",
+        "name": "Name",
+        "paths": "Paths",
+        "methods": "Methods",
+        "protocols": "Protocols",
+        "hosts": "Hosts",
+        "headers": "Headers",
+        "strip_path": "Strip Path",
+        "preserve_host": "Preserve Host",
+        "tags": "Tags",
+        "regex_priority": "Regex Priority",
+        "service": "Service"
+    },
+    "plugins": {
+        "title": "Plugins",
+        "name": "Name",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "config": "Configuration",
+        "apply_batch": "Batch Apply",
+        "select_plugin": "Select Plugin",
+        "no_plugins": "No plugins configured"
+    },
+    "consumers": {
+        "title": "Consumers",
+        "username": "Username",
+        "custom_id": "Custom ID",
+        "credentials": "Credentials",
+        "groups": "ACL Groups"
+    },
+    "connection": {
+        "title": "Connection",
+        "kong_url": "Kong Admin URL",
+        "status": "Status",
+        "connected": "Connected",
+        "disconnected": "Disconnected",
+        "version": "Version"
+    },
+    "errors": {
+        "required": "Required field",
+        "invalid_url": "Invalid URL",
+        "min_length": "Minimum {min} characters",
+        "max_length": "Maximum {max} characters"
+    }
+}
