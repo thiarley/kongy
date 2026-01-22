@@ -58,7 +58,7 @@ export async function loadConsumerDetails(ui: UI, consumer: any, callbacks: Cons
 
     // Load sub-resources
     loadConsumerAcls(consumer.id);
-    loadConsumerCredentials(consumer.id, 'basic-auth');
+    loadConsumerCredentials(consumer.id, 'basic-auth', ui);
     loadConsumerPlugins(consumer.id);
 }
 
@@ -79,10 +79,23 @@ export async function loadConsumerAcls(consumerId: string) {
                         <td><span class="badge badge-primary">${acl.group}</span></td>
                         <td>${new Date(acl.created_at * 1000).toLocaleDateString()}</td>
                         <td>
+                            <button class="btn-icon acl-edit-btn" data-id="${acl.id}" data-group="${acl.group}"><i class="ph ph-pencil-simple"></i></button>
                             <button class="btn-icon text-danger acl-delete-btn" data-id="${acl.id}" data-group="${acl.group}"><i class="ph ph-trash"></i></button>
                         </td>
                     </tr>
                  `).join('');
+
+                tbody.querySelectorAll('.acl-edit-btn').forEach((btn: any) => {
+                    btn.onclick = () => {
+                        const modal = document.getElementById('aclModal');
+                        if (modal) {
+                            modal.dataset.aclId = btn.dataset.id;
+                            modal.classList.remove('hidden');
+                            const input = document.getElementById('acl_group') as HTMLInputElement;
+                            if (input) input.value = btn.dataset.group;
+                        }
+                    };
+                });
 
                 tbody.querySelectorAll('.acl-delete-btn').forEach((btn: any) => {
                     btn.onclick = async () => {
@@ -99,7 +112,7 @@ export async function loadConsumerAcls(consumerId: string) {
     }
 }
 
-export async function loadConsumerCredentials(consumerId: string, type: string) {
+export async function loadConsumerCredentials(consumerId: string, type: string, ui?: UI) { // ui optional
     const tbody = document.querySelector('#consumerCredentialsTable tbody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Carregando...</td></tr>';
 
@@ -116,20 +129,45 @@ export async function loadConsumerCredentials(consumerId: string, type: string) 
                     if (type === 'jwt') detail = c.key || c.algorithm;
                     if (type === 'oauth2') detail = c.name || c.client_id;
 
+                    // store data for populate
+                    const dataStr = encodeURIComponent(JSON.stringify(c));
+
                     return `
                         <tr>
                             <td><code>${detail}</code></td>
                             <td>${new Date(c.created_at * 1000).toLocaleDateString()}</td>
-                            <td><button class="btn-icon text-danger cred-delete-btn" data-id="${c.id}"><i class="ph ph-trash"></i></button></td>
+                            <td>
+                                <button class="btn-icon cred-edit-btn" data-id="${c.id}" data-raw="${dataStr}"><i class="ph ph-pencil-simple"></i></button>
+                                <button class="btn-icon text-danger cred-delete-btn" data-id="${c.id}"><i class="ph ph-trash"></i></button>
+                            </td>
                         </tr>
                      `;
                 }).join('');
+
+                tbody.querySelectorAll('.cred-edit-btn').forEach((btn: any) => {
+                    btn.onclick = () => {
+                        if (!ui) return; // Need ui instance passed
+                        const data = JSON.parse(decodeURIComponent(btn.dataset.raw));
+
+                        ui.renderCredentialForm(type);
+                        ui.populateCredentialForm(type, data);
+
+                        const modal = document.getElementById('credentialModal');
+                        if (modal) {
+                            modal.dataset.credId = btn.dataset.id;
+                            modal.dataset.mode = 'edit';
+                            ui.openModal('credentialModal');
+                            const title = document.getElementById('credentialModalTitle');
+                            if (title) title.innerText = `Editar Credencial (${type})`;
+                        }
+                    };
+                });
 
                 tbody.querySelectorAll('.cred-delete-btn').forEach((btn: any) => {
                     btn.onclick = async () => {
                         if (await confirmAction('Remover credencial?')) {
                             await api.deleteConsumerCredential(consumerId, type, btn.dataset.id);
-                            loadConsumerCredentials(consumerId, type);
+                            loadConsumerCredentials(consumerId, type, ui);
                         }
                     };
                 });

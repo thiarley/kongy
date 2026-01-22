@@ -271,3 +271,32 @@ export function bindRouteCallbacks(ui: UI) {
         }
     };
 }
+
+export async function handleBatchDelete(ui: UI) {
+    const ids = store.selectedIds;
+    if (ids.length === 0) return showToast('Selecione rotas', 'warning');
+
+    if (await confirmAction(`Deletar ${ids.length} rotas selecionadas?`)) {
+        setBusy(document.getElementById('routesTable'), true);
+        let success = 0;
+        let errors = 0;
+
+        for (const id of ids) {
+            try {
+                await api.deleteRoute(id);
+                success++;
+            } catch (e) {
+                errors++;
+            }
+        }
+
+        refreshRoutes();
+        setBusy(document.getElementById('routesTable'), false);
+
+        if (errors === 0) {
+            showToast(`${success} rotas deletadas`, 'success');
+        } else {
+            showToast(`${success} deletadas, ${errors} falharam`, 'warning');
+        }
+    }
+}

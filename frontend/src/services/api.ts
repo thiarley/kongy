@@ -211,9 +211,8 @@ class API {
     }
 
     async createConsumerPlugin(consumerId: string, pluginName: string, config = {}) {
-        return this.fetchKong(METHODS.POST, '/plugins', {
+        return this.fetchKong(METHODS.POST, `/consumers/${consumerId}/plugins`, {
             name: pluginName,
-            consumer: { id: consumerId },
             config
         });
     }
@@ -283,6 +282,10 @@ class API {
         return this.fetchKong(METHODS.PATCH, `/upstreams/${id}`, data);
     }
 
+    async getUpstreamHealth(upstreamId: string) {
+        return this.fetchKong(METHODS.GET, `/upstreams/${upstreamId}/health`);
+    }
+
     // ==================== Service Routes ====================
     async getServiceRoutes(serviceId: string) {
         return this.fetchKong(METHODS.GET, `/services/${serviceId}/routes`);
@@ -343,6 +346,10 @@ class API {
         return this.fetchKong(METHODS.POST, `/consumers/${consumerId}/acls`, { group });
     }
 
+    async updateConsumerAcl(consumerId: string, aclId: string, group: string) {
+        return this.fetchKong(METHODS.PATCH, `/consumers/${consumerId}/acls/${aclId}`, { group });
+    }
+
     async deleteConsumerAcl(consumerId: string, aclId: string) {
         return this.fetchKong(METHODS.DELETE, `/consumers/${consumerId}/acls/${aclId}`);
     }
@@ -355,6 +362,10 @@ class API {
 
     async createConsumerCredential(consumerId: string, plugin: string, data: any) {
         return this.fetchKong(METHODS.POST, `/consumers/${consumerId}/${plugin}`, data);
+    }
+
+    async updateConsumerCredential(consumerId: string, plugin: string, credentialId: string, data: any) {
+        return this.fetchKong(METHODS.PATCH, `/consumers/${consumerId}/${plugin}/${credentialId}`, data);
     }
 
     async deleteConsumerCredential(consumerId: string, plugin: string, credentialId: string) {

@@ -5,7 +5,7 @@
 import { api } from '../services/api';
 import { UI } from '../ui';
 import { store } from '../store';
-import { showToast, setBusy } from '../utils';
+import { showToast, setBusy, getPluginIcon } from '../utils';
 import { confirmAction } from './shared';
 import { refreshRoutes } from './RoutesView';
 
@@ -20,7 +20,7 @@ export async function populatePluginSelect() {
         (enabled_plugins || []).forEach((p: string) => {
             const opt = document.createElement('option');
             opt.value = p;
-            opt.text = p;
+            opt.text = `${getPluginIcon(p)} ${p}`;
             select.appendChild(opt);
         });
     } catch (e) {
@@ -106,7 +106,7 @@ export function handleBatchPlugin(ui: UI) {
         modal.dataset.entityType = 'route';
     }
     populatePluginSelect();
-    const list = document.getElementById('routePluginsList');
+    const list = document.getElementById('pluginsList');
     if (list) list.style.display = 'none';
 }
 
@@ -144,7 +144,7 @@ export async function handleSavePluginConfig(ui: UI) {
     const pluginName = modal.dataset.pluginName;
     const pluginId = modal.dataset.pluginId;
     const entityType = modal.dataset.entityType;
-    const entityId = modal.dataset.entityId;
+    const entityId = modal.dataset.entityId || '';
     const mode = modal.dataset.mode;
 
     // Harvest Data
@@ -204,9 +204,15 @@ export async function handleSavePluginConfig(ui: UI) {
         // CREATE
         if (entityType === 'route') payload.route = { id: entityId };
         else if (entityType === 'service') payload.service = { id: entityId };
+        else if (entityType === 'consumer') payload.consumer = { id: entityId };
 
         try {
-            await api.createPlugin(payload);
+            if (entityType === 'consumer') {
+                // Use specific endpoint for consumers to avoid schema issues
+                await api.createConsumerPlugin(entityId, payload.name, payload.config);
+            } else {
+                await api.createPlugin(payload);
+            }
             showToast('Plugin criado', 'success');
             ui.closeModal('pluginConfigModal');
 
@@ -216,8 +222,10 @@ export async function handleSavePluginConfig(ui: UI) {
                     const r = store.state.routes.find(x => x.id === entityId);
                     if (r) loadRoutePlugins(ui, r);
                 }, 500);
-            } else {
+            } else if (entityType === 'service') {
                 loadServicePlugins(ui, { id: entityId });
+            } else if (entityType === 'consumer') {
+                import('./ConsumersView').then(m => m.loadConsumerPlugins(entityId));
             }
         } catch (e: any) {
             showToast(e.message, 'error');

@@ -137,29 +137,45 @@ export async function loadTargetsView(ui: UI, upstreamId: string, upstreamName: 
     if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
 
     try {
-        const { data: targets } = await api.getUpstreamTargets(upstreamId);
+        let targets = [];
+        try {
+            const healthData = await api.getUpstreamHealth(upstreamId);
+            targets = healthData.data || [];
+        } catch (e) {
+            console.warn('Health check fallback');
+            const { data } = await api.getUpstreamTargets(upstreamId);
+            targets = data || [];
+        }
 
         if (tbody) {
-            tbody.innerHTML = (targets || []).map((t: any) => `
-               <tr>
-                   <td>${t.target}</td>
-                   <td>${t.weight}</td>
-                   <td>${(t.tags || []).join(', ')}</td>
-                   <td><span class="badge ${t.health === 'HEALTHY' ? 'badge-success' : 'badge-warning'}">Ativo</span></td>
-                   <td>
-                       <button class="btn-icon text-danger target-del" data-id="${t.id}"><i class="ph ph-trash"></i></button>
-                   </td>
-               </tr>
-           `).join('');
+            if (targets.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhum target encontrado</td></tr>';
+            } else {
+                tbody.innerHTML = targets.map((t: any) => `
+                <tr>
+                    <td>${t.target}</td>
+                    <td>${t.weight}</td>
+                    <td>${(t.tags || []).join(', ')}</td>
+                    <td>
+                        <span class="badge ${t.health === 'HEALTHY' ? 'badge-success' : t.health === 'UNHEALTHY' ? 'badge-danger' : 'badge-warning'}">
+                            ${t.health || 'UNKNOWN'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-icon text-danger target-del" data-id="${t.id}"><i class="ph ph-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
 
-            tbody.querySelectorAll('.target-del').forEach((btn: any) => {
-                btn.onclick = async () => {
-                    if (confirm('Deletar target?')) {
-                        await api.deleteUpstreamTarget(upstreamId, btn.dataset.id);
-                        loadTargetsView(ui, upstreamId, upstreamName);
-                    }
-                };
-            });
+                tbody.querySelectorAll('.target-del').forEach((btn: any) => {
+                    btn.onclick = async () => {
+                        if (confirm('Deletar target?')) {
+                            await api.deleteUpstreamTarget(upstreamId, btn.dataset.id);
+                            loadTargetsView(ui, upstreamId, upstreamName);
+                        }
+                    };
+                });
+            }
         }
     } catch (e: any) {
         if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-danger">${e.message}</td></tr>`;

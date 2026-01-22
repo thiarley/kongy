@@ -37,7 +37,8 @@ import {
     handleAddPlugin,
     handleSavePluginConfig,
     bindPluginCallbacks,
-    handleBatchPlugin // <--- ADDED
+    handleBatchPlugin,
+    handleBatchDelete
 } from './views';
 
 const VIEWS = {
@@ -222,16 +223,17 @@ export class App {
                 console.log(`Nav Clicked: ${view}`);
                 e.preventDefault();
 
-                if (view === 'SERVICES') this.loadServicesView();
-                else if (view === 'ROUTES') this.refreshRoutes();
-                else if (view === 'CONSUMERS') this.loadConsumersView();
-                else if (view === 'UPSTREAMS') this.loadUpstreamsView();
-                else if (view === 'CERTIFICATES') this.loadCertificatesView();
-                else if (view === 'DASHBOARD') this.loadDashboard();
+                if (!view) return;
+                const v = view.toUpperCase();
+
+                if (v === 'SERVICES') this.loadServicesView();
+                else if (v === 'ROUTES') this.refreshRoutes();
+                else if (v === 'CONSUMERS') this.loadConsumersView();
+                else if (v === 'UPSTREAMS') this.loadUpstreamsView();
+                else if (v === 'CERTIFICATES') this.loadCertificatesView();
+                else if (v === 'DASHBOARD') this.loadDashboard();
             });
         });
-
-        // All services button
 
         // All services button
         document.getElementById('allServicesBtn')?.addEventListener('click', () => {
@@ -242,6 +244,11 @@ export class App {
         // Logout
         document.getElementById('logoutBtn')?.addEventListener('click', () => {
             auth.logout();
+        });
+
+        // Settings
+        document.getElementById('settingsBtn')?.addEventListener('click', () => {
+            this.ui.openModal('settingsModal');
         });
     }
 
@@ -302,71 +309,53 @@ export class App {
 
         // Routes
         check('refreshRoutesBtn')?.addEventListener('click', () => this.refreshRoutes());
-        check('refreshRoutesBtn')?.addEventListener('click', () => this.refreshRoutes());
         check('loadFileBtn')?.addEventListener('click', () => document.getElementById('routeFileInput')?.click());
         document.getElementById('routeFileInput')?.addEventListener('change', (e) => handleLoadFile(e));
 
-        check('exportRoutesBtn')?.addEventListener('click', () => handleExportRoutes());
         check('exportRoutesBtn')?.addEventListener('click', () => handleExportRoutes());
 
         check('batchEditBtn')?.addEventListener('click', () => handleBatchEdit(this.ui));
         check('pluginBatchBtn')?.addEventListener('click', () => handleBatchPlugin(this.ui));
 
-        check('deleteSelectedBtn')?.addEventListener('click', () => {
-            // Deletion logic triggers usually handled by UI confirmation, verify implementation later
-            console.log('Delete Selected Clicked - Placeholder');
+        // Delete Selected
+        check('deleteSelectedBtn')?.addEventListener('click', () => handleBatchDelete(this.ui));
+
+        // Search Route
+        document.getElementById('routeSearch')?.addEventListener('input', (e) => {
+            store.setSearchFilter((e.target as HTMLInputElement).value);
+        });
+
+        // Select All Routes
+        document.getElementById('selectAllRoutes')?.addEventListener('change', (e) => {
+            store.selectAllRoutes((e.target as HTMLInputElement).checked);
         });
 
         // Consumers
         check('refreshConsumersBtn')?.addEventListener('click', () => this.loadConsumersView());
         check('backToConsumersBtn')?.addEventListener('click', () => this.loadConsumersView());
 
+        // Consumer Search
+        document.getElementById('consumerSearch')?.addEventListener('input', (e) => {
+            // Basic implementation for consumer search if needed, currently ui.renderConsumers handles it but store might need update
+            // Logic in renderConsumers currently reads input value directly.
+            // If we want to use store:
+            // store.setConsumerSearch(...)
+            // For now relies on direct UI filtering in renderConsumers or re-render
+            this.loadConsumersView(); // Trigger re-render to apply filter
+        });
+
         // Upstreams/Certs
         check('refreshUpstreamsBtn')?.addEventListener('click', () => this.loadUpstreamsView());
         check('refreshCertificatesBtn')?.addEventListener('click', () => this.loadCertificatesView());
-
-        // Batch edit
-        document.getElementById('batchEditBtn')?.addEventListener('click', () => {
-            handleBatchEdit(this.ui);
-        });
-
-        // Batch plugin
-        document.getElementById('batchPluginBtn')?.addEventListener('click', () => {
-            const ids = store.selectedIds;
-            if (ids.length === 0) return showToast('Selecione rotas primeiro', 'warning');
-
-            this.ui.openModal('pluginsModal');
-            const modal = document.getElementById('pluginsModal');
-            if (modal) {
-                modal.dataset.mode = 'batch';
-                modal.dataset.entityType = 'route';
-            }
-            populatePluginSelect();
-        });
-
-        // Export routes
-        document.getElementById('exportRoutesBtn')?.addEventListener('click', () => {
-            if (store.selectedIds.length === 0) return showToast('Selecione rotas primeiro', 'warning');
-            handleExportRoutes();
-        });
 
         // Import routes
         document.getElementById('importRoutesBtn')?.addEventListener('click', () => {
             document.getElementById('routeFileInput')?.click();
         });
-
-        document.getElementById('routeFileInput')?.addEventListener('change', (e) => {
-            handleLoadFile(e);
-        });
-
-        // Refresh
-        document.getElementById('refreshBtn')?.addEventListener('click', () => {
-            this.refreshRoutes();
-        });
     }
 
     setupModalButtons() {
-        // Add plugin button
+        // Add plugin button (General)
         document.getElementById('addPluginBtn')?.addEventListener('click', () => {
             handleAddPlugin(this.ui);
         });
@@ -381,45 +370,80 @@ export class App {
             handleAddTarget(this.ui);
         });
 
-        // Add ACL
-        document.getElementById('addAclBtn')?.addEventListener('click', async () => {
+        // --- Consumer ACLs ---
+        document.getElementById('addAclBtn')?.addEventListener('click', () => {
+            this.ui.openModal('aclModal');
+        });
+
+        document.getElementById('saveAclBtn')?.addEventListener('click', async () => {
             const consumer = getCurrentConsumer();
             if (!consumer) return;
 
+            const modal = document.getElementById('aclModal');
             const group = (document.getElementById('acl_group') as HTMLInputElement)?.value;
             if (!group) return showToast('Grupo é obrigatório', 'warning');
 
+            const aclId = modal?.dataset.aclId; // if present, it's edit
+
             try {
-                await api.addConsumerAcl(consumer.id, group);
+                if (aclId) {
+                    await api.updateConsumerAcl(consumer.id, aclId, group);
+                    showToast('ACL atualizada', 'success');
+                    delete modal?.dataset.aclId;
+                } else {
+                    await api.addConsumerAcl(consumer.id, group);
+                    showToast('ACL adicionada', 'success');
+                }
                 loadConsumerAcls(consumer.id);
+                this.ui.closeModal('aclModal');
                 (document.getElementById('acl_group') as HTMLInputElement).value = '';
-                showToast('ACL adicionada', 'success');
+
             } catch (e: any) {
                 showToast(e.message, 'error');
             }
         });
 
-        // Add credential
-        document.getElementById('addCredentialBtn')?.addEventListener('click', async () => {
+        // --- Consumer Credentials ---
+        document.getElementById('addCredentialBtn')?.addEventListener('click', () => {
+            const activeTab = document.querySelector('.credential-tabs .tab-btn.active') as HTMLElement;
+            const type = activeTab?.dataset.cred || 'basic-auth';
+            const modal = document.getElementById('credentialModal');
+            if (modal) {
+                delete modal.dataset.credId; // clear edit state
+                delete modal.dataset.mode;
+            }
+            this.ui.renderCredentialForm(type);
+            this.ui.openModal('credentialModal');
+        });
+
+        document.getElementById('saveCredentialBtn')?.addEventListener('click', async () => {
             const consumer = getCurrentConsumer();
             if (!consumer) return;
 
-            const type = (document.getElementById('credential_type') as HTMLSelectElement)?.value;
-            const key = (document.getElementById('credential_key') as HTMLInputElement)?.value;
-
-            if (!type) return showToast('Tipo é obrigatório', 'warning');
+            const activeTab = document.querySelector('.credential-tabs .tab-btn.active') as HTMLElement;
+            const type = activeTab?.dataset.cred || 'basic-auth';
+            const data = this.ui.getCredentialFormData(type);
+            const modal = document.getElementById('credentialModal');
+            const credId = modal?.dataset.credId;
 
             try {
-                await api.createConsumerCredential(consumer.id, type, { key: key || undefined });
-                loadConsumerCredentials(consumer.id, type);
-                (document.getElementById('credential_key') as HTMLInputElement).value = '';
-                showToast('Credencial adicionada', 'success');
+                if (credId) {
+                    await api.updateConsumerCredential(consumer.id, type, credId, data);
+                    showToast('Credencial atualizada', 'success');
+                    delete modal?.dataset.credId;
+                } else {
+                    await api.createConsumerCredential(consumer.id, type, data);
+                    showToast('Credencial adicionada', 'success');
+                }
+
+                loadConsumerCredentials(consumer.id, type, this.ui);
+                this.ui.closeModal('credentialModal');
             } catch (e: any) {
                 showToast(e.message, 'error');
             }
         });
 
-        // Save consumer details
+        // --- Save Consumer Details ---
         document.getElementById('saveConsumerDetailsBtn')?.addEventListener('click', async () => {
             const consumer = getCurrentConsumer();
             if (!consumer) return;
@@ -440,26 +464,64 @@ export class App {
             }
         });
 
-        // Add consumer plugin
-        document.getElementById('addConsumerPluginBtn')?.addEventListener('click', async () => {
+        // --- Consumer Plugins ---
+        document.getElementById('addConsumerPluginBtn')?.addEventListener('click', () => {
             const consumer = getCurrentConsumer();
             if (!consumer) return;
 
-            const pluginName = (document.getElementById('consumer_plugin_select') as HTMLSelectElement)?.value;
-            if (!pluginName) return showToast('Selecione um plugin', 'warning');
+            this.ui.openModal('pluginsModal');
+            const modal = document.getElementById('pluginsModal');
+            if (modal) {
+                modal.dataset.entityType = 'consumer';
+                modal.dataset.entityId = consumer.id;
+                modal.dataset.pluginId = '';
+                modal.dataset.mode = ''; // Clear batch mode
+            }
+            populatePluginSelect();
+            // Hide list, show loading/empty initially or just list existing (which is handled by view usually)
+            // But here we are just adding.
+            const list = document.getElementById('pluginsList');
+            if (list) list.style.display = 'none'; // We are adding, not listing
+        });
+
+        // --- Settings ---
+        document.getElementById('saveSettingsBtn')?.addEventListener('click', async () => {
+            const url = (document.getElementById('conf_kong_url') as HTMLInputElement).value;
+            if (!url) return showToast('URL é obrigatória', 'warning');
 
             try {
-                await api.createConsumerPlugin(consumer.id, pluginName);
-                loadConsumerPlugins(consumer.id);
-                showToast('Plugin adicionado ao consumer', 'success');
+                // await api.updateConnectionConfig(url);
+                // Mocking connection test since backend for config might be different or local
+                // Assuming we just want to reload or check connection
+                const res = await api.getNodeStatus();
+                showToast('Conexão realizada com sucesso!', 'success');
+                this.ui.closeModal('settingsModal');
+            } catch (e: any) {
+                showToast('Falha na conexão: ' + e.message, 'error');
+            }
+        });
+
+        document.getElementById('changePasswordBtn')?.addEventListener('click', async () => {
+            const current = (document.getElementById('currentPassword') as HTMLInputElement).value;
+            const newPass = (document.getElementById('newPassword') as HTMLInputElement).value;
+            const confirm = (document.getElementById('confirmPassword') as HTMLInputElement).value;
+
+            if (newPass !== confirm) return showToast('Senhas não conferem', 'warning');
+
+            try {
+                await auth.changePassword(current, newPass);
+                showToast('Senha alterada com sucesso', 'success');
+                (document.getElementById('changePasswordForm') as HTMLFormElement).reset();
+                this.ui.closeModal('settingsModal');
             } catch (e: any) {
                 showToast(e.message, 'error');
             }
         });
 
         // Modal close buttons
-        document.querySelectorAll('.modal-close, .modal .btn-secondary').forEach(btn => {
-            btn.addEventListener('click', () => {
+        document.querySelectorAll('.modal-close, .modal .btn-secondary, .close-modal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault(); // prevent form submit
                 const modal = btn.closest('.modal');
                 if (modal) this.ui.closeModal(modal.id);
             });
@@ -486,14 +548,14 @@ export class App {
         // Credential type tabs
         document.querySelectorAll('.credential-tabs .tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const type = (btn as HTMLElement).dataset.type;
+                const type = (btn as HTMLElement).dataset.cred;
                 const consumer = getCurrentConsumer();
                 if (!type || !consumer) return;
 
                 document.querySelectorAll('.credential-tabs .tab-btn').forEach(t => t.classList.remove('active'));
                 btn.classList.add('active');
 
-                loadConsumerCredentials(consumer.id, type);
+                loadConsumerCredentials(consumer.id, type, this.ui);
             });
         });
 

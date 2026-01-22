@@ -169,8 +169,8 @@
             cursor: pointer;
         }
     </style>
-  <script type="module" crossorigin src="/assets/login-DChUcHm2.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/auth-_lKN4eLn.js">
+  <script type="module" crossorigin src="/assets/login-CxSntXg1.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/auth-B4Si5wDg.js">
   <link rel="stylesheet" crossorigin href="/assets/auth-C88hot9s.css">
 </head>
 
@@ -208,6 +208,16 @@
                     <input type="text" id="username" name="username" class="form-input"
                         data-i18n-placeholder="auth.username" placeholder="Usuário" required autocomplete="username"
                         autofocus>
+                </div>
+
+                <!-- Kong URL (Setup Only) -->
+                <div class="form-group" id="kong-url-group" style="display: none;">
+                    <label class="form-label" for="kong_url">Kong Admin URL</label>
+                    <input type="url" id="kong_url" name="kong_url" class="form-input"
+                        placeholder="http://kong:8001">
+                    <small style="color: var(--text-tertiary); font-size: 0.8em; margin-top: 4px; display: block;">
+                        URL interna (ex: http://kong:8001)
+                    </small>
                 </div>
 
                 <div class="form-group">

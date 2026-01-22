@@ -675,6 +675,9 @@ export class UI {
         const container = document.getElementById('pluginsList');
         if (!container) return;
 
+        // Ensure visible (might have been hidden by batch mode)
+        container.style.display = '';
+
         const entityNameEl = document.getElementById('pluginsEntityName');
         if (entityNameEl) {
             entityNameEl.textContent = route.name || route.username || route.id;
@@ -908,5 +911,44 @@ export class UI {
             if (uris) data.redirect_uris = uris.split(',').map(u => u.trim());
         }
         return data;
+    }
+
+    populateCredentialForm(type: string, data: any) {
+        if (!data) return;
+
+        if (type === 'basic-auth') {
+            const u = document.getElementById('cred_username') as HTMLInputElement;
+            const p = document.getElementById('cred_password') as HTMLInputElement;
+            if (u) u.value = data.username || '';
+            if (p) p.value = data.password || '';
+        } else if (type === 'key-auth') {
+            const k = document.getElementById('cred_key') as HTMLInputElement;
+            if (k) k.value = data.key || '';
+        } else if (type === 'jwt') {
+            const k = document.getElementById('cred_key') as HTMLInputElement;
+            const alg = document.getElementById('cred_algorithm') as HTMLInputElement;
+            const rsa = document.getElementById('cred_rsa_public_key') as HTMLInputElement;
+            const sec = document.getElementById('cred_secret') as HTMLInputElement;
+
+            if (k) k.value = data.key || '';
+            if (alg) alg.value = data.algorithm || 'HS256';
+            if (rsa) rsa.value = data.rsa_public_key || '';
+            if (sec) sec.value = data.secret || '';
+        } else if (type === 'hmac-auth') {
+            const u = document.getElementById('cred_username') as HTMLInputElement;
+            const s = document.getElementById('cred_secret') as HTMLInputElement;
+            if (u) u.value = data.username || '';
+            if (s) s.value = data.secret || '';
+        } else if (type === 'oauth2') {
+            const n = document.getElementById('cred_name') as HTMLInputElement;
+            const cid = document.getElementById('cred_client_id') as HTMLInputElement;
+            const csc = document.getElementById('cred_client_secret') as HTMLInputElement;
+            const uris = document.getElementById('cred_redirect_uris') as HTMLInputElement;
+
+            if (n) n.value = data.name || '';
+            if (cid) cid.value = data.client_id || '';
+            if (csc) csc.value = data.client_secret || '';
+            if (uris) uris.value = (data.redirect_uris || []).join(', ');
+        }
     }
 }

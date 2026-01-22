@@ -103,6 +103,24 @@ export class Auth {
         }
     }
 
+    async changePassword(current: string, newPass: string): Promise<any> {
+        const response = await fetch(`${API_BASE}/auth/change-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...this.getAuthHeaders() as any
+            },
+            body: JSON.stringify({ old_password: current, new_password: newPass })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to change password');
+        }
+
+        return response.json();
+    }
+
     getAuthHeaders(): HeadersInit {
         if (!this.token) {
             return {};
