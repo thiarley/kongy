@@ -436,6 +436,10 @@ export class App {
             }
         });
 
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            auth.logout();
+        });
+
         // Modal close buttons
         document.querySelectorAll('.modal-close, .modal .btn-secondary, .close-modal').forEach(btn => {
             btn.addEventListener('click', (e) => {

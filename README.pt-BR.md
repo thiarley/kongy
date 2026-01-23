@@ -26,6 +26,17 @@
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="screenshots/setup.png" width="400" alt="Configuração Inicial">
+  <img src="screenshots/services.png" width="400" alt="Visualização de Serviços">
+  <img src="screenshots/routes.png" width="400" alt="Visualização de Rotas">
+  <img src="screenshots/plugins.png" width="400" alt="Gerenciamento de Plugins">
+</p>
+
+---
+
 ## 🚀 Quick Start
 
 ### Com Docker (recomendado)

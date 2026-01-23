@@ -345,9 +345,9 @@ export class UI {
 
         const stats = store.stats;
         this.els.stats.innerHTML = `
-            <span class="stat-number">${stats.total}</span> Rotas
+            <span class="stat-number">${stats.total}</span> ${i18n.t('routes.title')}
             <span class="stat-divider">|</span>
-            <span class="stat-info">${stats.withPlugins}</span> com plugins
+            <span class="stat-info">${stats.withPlugins}</span> ${i18n.t('routes.with_plugins')}
         `;
     }
 

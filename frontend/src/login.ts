@@ -100,9 +100,9 @@ function updateViewStates() {
 
     if (needsSetup) {
         // Setup Mode Styles
-        if (titleText) titleText.textContent = 'Configuração Inicial';
-        if (subtitle) subtitle.textContent = 'Crie o usuário administrador e configure o Kong';
-        if (btnText) btnText.textContent = 'Criar Conta e Entrar';
+        if (titleText) titleText.textContent = i18n.t('auth.setup_title');
+        if (subtitle) subtitle.textContent = i18n.t('auth.setup_description');
+        if (btnText) btnText.textContent = i18n.t('auth.setup_button');
         if (setupNotice) setupNotice.style.display = 'block';
         if (kongUrlGroup) kongUrlGroup.style.display = 'block';
 
@@ -110,13 +110,12 @@ function updateViewStates() {
         if (btn) btn.style.background = 'linear-gradient(135deg, var(--success), #059669)';
 
         // Add explicit placeholders
-        if (usernameInput) usernameInput.placeholder = 'Novo Usuário (ex: admin)';
-        if (passwordInput) passwordInput.placeholder = 'Nova Senha (min 8 chars)';
+        if (usernameInput) usernameInput.placeholder = i18n.t('auth.new_username_placeholder');
+        if (passwordInput) passwordInput.placeholder = i18n.t('auth.new_password_placeholder');
     } else {
         // Login Mode Styles
-        if (titleText) titleText.textContent = 'Kongy';
+        if (titleText) titleText.textContent = i18n.t('app.title');
         if (subtitle) subtitle.textContent = i18n.t('auth.login_title');
-        if (btnText) btnText.textContent = i18n.t('auth.login_button');
         if (btnText) btnText.textContent = i18n.t('auth.login_button');
         if (setupNotice) setupNotice.style.display = 'none';
         if (kongUrlGroup) kongUrlGroup.style.display = 'none';

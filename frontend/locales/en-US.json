@@ -9,21 +9,32 @@
         "username": "Username",
         "password": "Password",
         "setup_title": "Initial Setup",
-        "setup_description": "Configure the admin user to start using Kongy.",
-        "setup_button": "Create User",
+        "setup_description": "Create admin user and configure Kong",
+        "setup_button": "Create Account and Sign In",
+        "new_username_placeholder": "New Username (e.g. admin)",
+        "new_password_placeholder": "New Password (min 8 chars)",
         "login_title": "Kongy Login",
         "login_button": "Sign In",
         "login_error": "Invalid credentials",
         "rate_limit_error": "Too many attempts. Please wait a few minutes.",
-        "session_expired": "Session expired. Please log in again."
+        "session_expired": "Session expired. Please log in again.",
+        "verifying": "Verifying authentication...",
+        "security": "Security",
+        "change_password_desc": "Change your password for Kongy Admin.",
+        "current_password": "Current Password",
+        "new_password": "New Password",
+        "confirm_password": "Confirm New Password",
+        "change_password": "Change Password"
     },
     "nav": {
+        "dashboard": "Dashboard",
         "services": "Services",
         "routes": "Routes",
         "plugins": "Plugins",
         "consumers": "Consumers",
         "upstreams": "Upstreams",
-        "certificates": "Certificates"
+        "certificates": "Certificates",
+        "settings": "Settings"
     },
     "actions": {
         "save": "Save",
@@ -42,7 +53,13 @@
         "deselect_all": "Deselect All",
         "close": "Close",
         "confirm": "Confirm",
-        "back": "Back"
+        "back": "Back",
+        "details": "Details",
+        "search": "Search",
+        "save_test": "Save & Test",
+        "exit_context": "Exit Context",
+        "edit_route": "Edit Route",
+        "actions": "Actions"
     },
     "messages": {
         "success": "Operation completed successfully",
@@ -57,18 +74,41 @@
         "deleted": "Deleted successfully",
         "copied": "Copied to clipboard"
     },
+    "dashboard": {
+        "title": "Dashboard",
+        "loading": "Loading...",
+        "hostname": "Hostname",
+        "version": "Version",
+        "lua_version": "Lua Version",
+        "plugins_count": "Active Plugins",
+        "admin_listen": "Admin Listen",
+        "total_requests": "Total Requests",
+        "active_services": "Active Services",
+        "total_routes": "Total Routes",
+        "node_status": "Node Status",
+        "plugins_enabled": "Active Plugins",
+        "configuration": "Configuration"
+    },
     "services": {
         "title": "Services",
+        "entity": "Service",
         "name": "Name",
         "host": "Host",
         "port": "Port",
         "protocol": "Protocol",
         "path": "Path",
         "routes_count": "Routes",
-        "plugins_count": "Plugins"
+        "plugins_count": "Plugins",
+        "create_success": "Service created!",
+        "update_success": "Service updated!",
+        "delete_success": "Service deleted",
+        "empty_state": "No services found",
+        "current": "Current Service",
+        "plugins_title": "Service Plugins"
     },
     "routes": {
         "title": "Routes",
+        "entity": "Route",
         "name": "Name",
         "paths": "Paths",
         "methods": "Methods",
@@ -79,24 +119,55 @@
         "preserve_host": "Preserve Host",
         "tags": "Tags",
         "regex_priority": "Regex Priority",
-        "service": "Service"
+        "service": "Service",
+        "source": "Source",
+        "endpoint_methods": "Endpoint / Methods",
+        "tags_plugins": "Tags / Plugins",
+        "with_plugins": "with plugins"
     },
     "plugins": {
         "title": "Plugins",
+        "entity": "Plugin",
         "name": "Name",
         "enabled": "Enabled",
         "disabled": "Disabled",
         "config": "Configuration",
         "apply_batch": "Batch Apply",
         "select_plugin": "Select Plugin",
-        "no_plugins": "No plugins configured"
+        "no_plugins": "No plugins configured",
+        "select_placeholder": "Select a plugin..."
     },
     "consumers": {
         "title": "Consumers",
+        "entity": "Consumer",
         "username": "Username",
         "custom_id": "Custom ID",
-        "credentials": "Credentials",
-        "groups": "ACL Groups"
+        "credentials_label": "Credentials",
+        "groups": "ACL Groups",
+        "acls": {
+            "group": "Group"
+        },
+        "credentials": {
+            "title": "Credentials"
+        },
+        "plugins_title": "Consumer Plugins"
+    },
+    "upstreams": {
+        "title": "Upstreams",
+        "entity": "Upstream",
+        "algorithm": "Algorithm",
+        "slots": "Slots",
+        "targets_title": "Targets",
+        "target": "Target",
+        "weight": "Weight",
+        "health": "Health"
+    },
+    "certificates": {
+        "title": "Certificates",
+        "entity": "Certificate",
+        "sni": "SNIs",
+        "cert": "Certificate",
+        "key": "Key"
     },
     "connection": {
         "title": "Connection",
@@ -104,7 +175,9 @@
         "status": "Status",
         "connected": "Connected",
         "disconnected": "Disconnected",
-        "version": "Version"
+        "version": "Version",
+        "runtime_config_title": "Runtime Configuration",
+        "runtime_config_desc": "Changes are applied immediately but are lost upon backend restart."
     },
     "errors": {
         "required": "Required field",

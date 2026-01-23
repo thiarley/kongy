@@ -9,8 +9,10 @@
     "username": "Usuário",
     "password": "Senha",
     "setup_title": "Configuração Inicial",
-    "setup_description": "Configure o usuário administrador para começar a usar o Kongy.",
-    "setup_button": "Criar Usuário",
+    "setup_description": "Crie o usuário administrador e configure o Kong",
+    "setup_button": "Criar Conta e Entrar",
+    "new_username_placeholder": "Novo Usuário (ex: admin)",
+    "new_password_placeholder": "Nova Senha (min 8 chars)",
     "login_title": "Acesso ao Kongy",
     "login_button": "Entrar",
     "login_error": "Credenciais inválidas",
@@ -61,7 +63,8 @@
     "toggle": "Alternar",
     "exit_context": "Sair do contexto",
     "save_test": "Salvar & Testar",
-    "edit_route": "Editar Rota"
+    "edit_route": "Editar Rota",
+    "actions": "Ações"
   },
   "messages": {
     "success": "Operação realizada com sucesso",
@@ -139,7 +142,10 @@
     "empty_state": "Nenhuma rota encontrada",
     "select_warning": "Selecione rotas",
     "batch_no_change_warning": "Selecione pelo menos um campo para alterar",
-    "source": "Fonte"
+    "source": "Fonte",
+    "endpoint_methods": "Endpoint / Métodos",
+    "tags_plugins": "Tags / Plugins",
+    "with_plugins": "com plugins"
   },
   "plugins": {
     "title": "Plugins",
