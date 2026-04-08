@@ -44,18 +44,19 @@ export async function populatePluginSelect() {
 
 export async function loadRoutePlugins(ui: UI, route: any) {
     try {
-        const routePlugins = store.getRoutePlugins(route.id);
+        const { data: routePlugins } = await api.getPlugins(route.id);
 
         ui.renderRoutePluginsList(routePlugins, route, {
             onToggle: async (id: string, enabled: boolean) => {
                 await api.updatePlugin(id, { enabled });
-                refreshRoutes();
+                await refreshRoutes();
+                await loadRoutePlugins(ui, route);
             },
             onDelete: async (id: string) => {
                 if (await confirmAction(i18n.t('plugins.delete_confirm'))) {
                     await api.deletePlugin(id);
-                    refreshRoutes();
-                    setTimeout(() => loadRoutePlugins(ui, route), 500);
+                    await refreshRoutes();
+                    await loadRoutePlugins(ui, route);
                 }
             },
             onEdit: (plugin: any) => {

@@ -13,7 +13,7 @@ from typing import Dict, List
 
 from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
+from starlette.responses import Response, JSONResponse
 
 from app.config import settings
 
@@ -49,10 +49,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         # Check rate limit
         if len(_request_counts[client_ip]) >= settings.RATE_LIMIT_REQUESTS:
-            raise HTTPException(
+            response = JSONResponse(
                 status_code=429,
-                detail="Too many requests. Please slow down."
+                content={"detail": "Too many requests. Please slow down."}
             )
+            response.headers["Retry-After"] = str(settings.RATE_LIMIT_WINDOW)
+            self._add_security_headers(response)
+            return response
         
         # Record this request
         _request_counts[client_ip].append(current_time)

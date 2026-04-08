@@ -112,11 +112,16 @@ export async function refreshRoutes() {
         store.setLoading(true);
         const serviceId = api.getServiceId();
         const data = serviceId ? await api.getServiceRoutes(serviceId) : await api.getRoutes();
-        store.setRoutes(data.data || []);
+        const routes = data.data || [];
+        store.setRoutes(routes);
 
-        // Get plugins too
-        const pluginsData = await api.getPlugins();
-        store.setPlugins(pluginsData.data || []);
+        // Load all plugins in a few paginated requests, then keep only those for visible routes.
+        const routeIds = new Set(routes.map((route: any) => route.id));
+        const pluginsResponse = await api.getAllPlugins();
+        const routePlugins = (pluginsResponse.data || []).filter((plugin: any) =>
+            plugin.route?.id && routeIds.has(plugin.route.id)
+        );
+        store.setPlugins(routePlugins);
 
     } catch (e: any) {
         showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');

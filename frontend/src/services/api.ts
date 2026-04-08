@@ -29,6 +29,35 @@ class API {
 
     // ==================== Core Fetch Method ====================
 
+    private async parseResponse(response: Response): Promise<any> {
+        const contentType = response.headers.get('content-type') || '';
+        const rawText = await response.text();
+
+        if (!rawText) {
+            return null;
+        }
+
+        const looksLikeJson = contentType.includes('application/json') ||
+            rawText.trim().startsWith('{') ||
+            rawText.trim().startsWith('[');
+
+        if (looksLikeJson) {
+            try {
+                return JSON.parse(rawText);
+            } catch {
+                if (!response.ok) {
+                    throw new Error(rawText);
+                }
+            }
+        }
+
+        if (!response.ok) {
+            throw new Error(rawText);
+        }
+
+        return { raw: rawText };
+    }
+
     async fetchApi(method: string, endpoint: string, body: any = null): Promise<any> {
         if (!endpoint.startsWith('/')) endpoint = '/' + endpoint;
         const url = `${API_BASE}${endpoint}`;
@@ -61,11 +90,12 @@ class API {
                 return { success: true };
             }
 
-            const data = await response.json();
+            const data = await this.parseResponse(response);
 
             if (!response.ok || data.error) {
                 const message = data.detail ||
                     data.message ||
+                    data.raw ||
                     data.details?.message ||
                     (typeof data.details === 'string' ? data.details : null) ||
                     ERROR_MESSAGES.UNKNOWN_ERROR;
@@ -149,6 +179,29 @@ class API {
         else if (serviceId) endpoint = `/services/${serviceId}/plugins`;
 
         return this.fetchKong(METHODS.GET, endpoint);
+    }
+
+    async getAllPlugins(): Promise<ApiResponse<Plugin>> {
+        const plugins: Plugin[] = [];
+        let endpoint = '/plugins';
+
+        while (endpoint) {
+            const response = await this.fetchKong(METHODS.GET, endpoint);
+            plugins.push(...(response.data || []));
+
+            if (!response.next) {
+                break;
+            }
+
+            try {
+                const nextUrl = new URL(response.next);
+                endpoint = `${nextUrl.pathname}${nextUrl.search}`;
+            } catch {
+                endpoint = response.next;
+            }
+        }
+
+        return { data: plugins };
     }
 
     async getPluginSchema(pluginName: string): Promise<any> {
