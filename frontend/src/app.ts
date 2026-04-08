@@ -19,6 +19,7 @@ import {
     refreshRoutes,
     handleAddRoute,
     handleExportRoutes,
+    handleDownloadImportExample,
     handleLoadFile,
     handleBatchEdit,
     bindRouteCallbacks,
@@ -200,6 +201,9 @@ export class App {
         });
         document.getElementById('loadFileBtn')?.addEventListener('click', () => {
             document.getElementById('routeFileInput')?.click();
+        });
+        document.getElementById('downloadImportExampleBtn')?.addEventListener('click', () => {
+            handleDownloadImportExample();
         });
         document.getElementById('routeFileInput')?.addEventListener('change', (e) => {
             handleLoadFile(e);
@@ -493,4 +497,3 @@ export class App {
         });
     }
 }
-

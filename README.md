@@ -170,6 +170,8 @@ cd frontend
 npm run build
 ```
 
+On the routes screen, the actions bar includes a button to download a `routes-import-example.json` file with a valid import example.
+
 ---
 
 ## 🐳 Docker Production

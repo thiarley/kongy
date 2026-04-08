@@ -74,7 +74,7 @@ export function handleExportRoutes() {
 
     const exportObj = {
         created_at: new Date().toISOString(),
-        info: 'Konga Manager Export',
+        info: 'Kongy Manager Export',
         routes: routes
     };
 
@@ -82,6 +82,44 @@ export function handleExportRoutes() {
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
     downloadAnchorNode.setAttribute("download", "routes.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+export function handleDownloadImportExample() {
+    const exampleObj = {
+        created_at: new Date().toISOString(),
+        info: 'Kongy Manager Import Example',
+        routes: [
+            {
+                name: 'example-route',
+                paths: ['/example'],
+                methods: ['GET', 'POST'],
+                strip_path: true,
+                preserve_host: false,
+                tags: ['example', 'publico'],
+                plugins: [
+                    {
+                        name: 'cors',
+                        enabled: true,
+                        config: {
+                            origins: ['*'],
+                            methods: ['GET', 'POST'],
+                            headers: ['Accept', 'Authorization', 'Content-Type'],
+                            credentials: true,
+                            max_age: 3600
+                        }
+                    }
+                ]
+            }
+        ]
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exampleObj, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "routes-import-example.json");
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();

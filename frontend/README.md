@@ -67,6 +67,8 @@ npm run build
 
 Os arquivos serão gerados em `dist/`.
 
+Na tela de rotas, a barra de acoes agora inclui um botao para baixar um arquivo `routes-import-example.json` com um exemplo valido de importacao.
+
 ### Preview do Build
 
 ```bash
