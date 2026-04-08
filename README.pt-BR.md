@@ -141,6 +141,8 @@ kongy/
 
 Veja `.env.example` para todas as opções.
 
+`KONG_ADMIN_URL` e usado como URL inicial do Kong Admin API a cada subida da aplicacao. Se o setup inicial informar outra URL, ela vale apenas em memoria ate o proximo restart.
+
 ---
 
 ## 🔒 Security
@@ -182,6 +184,18 @@ docker compose -f docker-compose.prod.yml build
 # Deploy
 docker compose -f docker-compose.prod.yml up -d
 ```
+
+Para publicacao em registry, o Dockerfile do frontend agora gera a imagem de producao com Nginx por padrao:
+
+```bash
+docker build \
+  --provenance=false \
+  --build-arg NPM_REGISTRY=https://nexus.exemplo/repository/npm-group/ \
+  -t kongy-frontend:1.0.0 \
+  frontend
+```
+
+Use `--target dev` apenas quando quiser explicitamente a imagem de desenvolvimento com Vite.
 
 ### Kubernetes
 

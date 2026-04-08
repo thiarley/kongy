@@ -7,7 +7,7 @@ interface State {
     enabledPlugins: string[];
 
     // Selection
-    selectedRoutes: Set<Route>;
+    selectedRoutes: Set<string>;
 
     // UI State
     isLoading: boolean;
@@ -103,10 +103,7 @@ class Store {
 
     removeRoute(routeId: string) {
         this.state.routes = this.state.routes.filter(r => r.id !== routeId);
-        const toRemove = Array.from(this.state.selectedRoutes).find(r => r.id === routeId);
-        if (toRemove) {
-            this.state.selectedRoutes.delete(toRemove);
-        }
+        this.state.selectedRoutes.delete(routeId);
         this.notify();
     }
 
@@ -120,14 +117,18 @@ class Store {
         }));
 
         this.state.routes = [...this.state.routes, ...localRoutes];
-        localRoutes.forEach(r => this.state.selectedRoutes.add(r));
+        localRoutes.forEach(r => {
+            if (r.id) this.state.selectedRoutes.add(r.id);
+        });
         this.notify();
     }
 
     clearLocalRoutes() {
         this.state.routes = this.state.routes.filter(r => r.source !== 'local');
         this.state.selectedRoutes = new Set(
-            Array.from(this.state.selectedRoutes).filter(r => r.source !== 'local')
+            Array.from(this.state.selectedRoutes).filter(routeId =>
+                this.state.routes.some(r => r.id === routeId)
+            )
         );
         this.notify();
     }
@@ -140,20 +141,24 @@ class Store {
         return this.state.routes.filter(r => r.source === 'remote');
     }
 
-    selectRoute(route: Route, isSelected: boolean) {
+    selectRoute(routeId: string, isSelected: boolean) {
         if (isSelected) {
-            this.state.selectedRoutes.add(route);
+            this.state.selectedRoutes.add(routeId);
         } else {
-            this.state.selectedRoutes.delete(route);
+            this.state.selectedRoutes.delete(routeId);
         }
         this.notify();
     }
 
     selectAllRoutes(isSelected: boolean) {
         if (isSelected) {
-            this.filteredRoutes.forEach(r => this.state.selectedRoutes.add(r));
+            this.filteredRoutes.forEach(r => {
+                if (r.id) this.state.selectedRoutes.add(r.id);
+            });
         } else {
-            this.state.selectedRoutes.clear();
+            this.filteredRoutes.forEach(r => {
+                if (r.id) this.state.selectedRoutes.delete(r.id);
+            });
         }
         this.notify();
     }
@@ -256,13 +261,11 @@ class Store {
     }
 
     get selectedIds() {
-        return Array.from(this.state.selectedRoutes)
-            .map(r => r.id)
-            .filter(Boolean);
+        return Array.from(this.state.selectedRoutes).filter(Boolean);
     }
 
     get selectedRoutesArray() {
-        return Array.from(this.state.selectedRoutes);
+        return this.state.routes.filter(r => r.id && this.state.selectedRoutes.has(r.id));
     }
 
     get stats() {

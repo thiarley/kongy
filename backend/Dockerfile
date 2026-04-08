@@ -2,12 +2,21 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+ARG PIP_INDEX_URL=
+ARG PIP_EXTRA_INDEX_URL=
+
 # Security: Create non-root user
 RUN adduser --disabled-password --gecos '' --uid 1000 appuser
 
 # Install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org -r requirements.txt
+RUN pip install --no-cache-dir \
+    --trusted-host pypi.org \
+    --trusted-host pypi.python.org \
+    --trusted-host files.pythonhosted.org \
+    ${PIP_INDEX_URL:+--index-url $PIP_INDEX_URL} \
+    ${PIP_EXTRA_INDEX_URL:+--extra-index-url $PIP_EXTRA_INDEX_URL} \
+    -r requirements.txt
 
 # Copy application code
 COPY app/ ./app/

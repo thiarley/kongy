@@ -140,6 +140,8 @@ kongy/
 
 See `.env.example` for all options.
 
+`KONG_ADMIN_URL` is the initial Kong Admin API URL on each application startup. If initial setup provides a different URL, that override only lives in memory until the next restart.
+
 ---
 
 ## 🔒 Security
@@ -181,6 +183,18 @@ docker compose -f docker-compose.prod.yml build
 # Deploy
 docker compose -f docker-compose.prod.yml up -d
 ```
+
+For container registry publishing, the frontend Dockerfile now builds the production Nginx image by default:
+
+```bash
+docker build \
+  --provenance=false \
+  --build-arg NPM_REGISTRY=https://nexus.example/repository/npm-group/ \
+  -t kongy-frontend:1.0.0 \
+  frontend
+```
+
+Use `--target dev` only when you explicitly want the Vite development image.
 
 ### Kubernetes
 

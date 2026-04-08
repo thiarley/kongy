@@ -243,6 +243,10 @@ export class App {
             store.setSearchFilter((e.target as HTMLInputElement).value);
         });
 
+        document.getElementById('selectAllRoutes')?.addEventListener('change', (e) => {
+            store.selectAllRoutes((e.target as HTMLInputElement).checked);
+        });
+
         // --- Navigation ---
         document.querySelectorAll('.btn-nav').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -489,5 +493,4 @@ export class App {
         });
     }
 }
-
 

@@ -123,12 +123,30 @@ O Dockerfile usa multi-stage build:
 1. **Builder**: Compila TypeScript e gera bundle
 2. **Production**: Nginx servindo arquivos estáticos
 
+O build padrão do Dockerfile agora gera a imagem de produção por default. O stage `dev` continua disponível apenas para desenvolvimento local com `--target dev`.
+
 ```bash
-# Build
-docker build -t kongy-frontend .
+# Build de produção
+docker build --provenance=false -t kongy-frontend .
 
 # Run
 docker run -p 8080:80 kongy-frontend
+```
+
+Para ambientes com registry npm corporativo:
+
+```bash
+docker build \
+  --provenance=false \
+  --build-arg NPM_REGISTRY=https://nexus.exemplo/repository/npm-group/ \
+  -t kongy-frontend .
+```
+
+Para usar o stage de desenvolvimento:
+
+```bash
+docker build --target dev -t kongy-frontend-dev .
+docker run -p 8081:8081 kongy-frontend-dev
 ```
 
 ## 📦 Dependências

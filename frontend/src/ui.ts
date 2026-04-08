@@ -141,7 +141,7 @@ export class UI {
         });
     }
 
-    renderRoutes(routes: Route[], selectedSet: Set<Route>) {
+    renderRoutes(routes: Route[], selectedSet: Set<string>) {
         // Robustness: Re-query in case of DOM changes
         const tbody = document.querySelector('#routesTable tbody') || this.els.routesTable;
         if (!tbody) {
@@ -166,7 +166,7 @@ export class UI {
 
             routes.forEach(route => {
                 const tr = document.createElement('tr');
-                const isSelected = selectedSet.has(route);
+                const isSelected = !!route.id && selectedSet.has(route.id);
                 if (isSelected) tr.classList.add('selected-row');
 
                 const raw = route.raw || route;
@@ -234,7 +234,8 @@ export class UI {
             `;
 
                 (tr.querySelector('.route-check') as HTMLElement).onchange = (e: any) => {
-                    store.selectRoute(route, e.target.checked);
+                    if (!route.id) return;
+                    store.selectRoute(route.id, e.target.checked);
                 };
                 (tr.querySelector('.action-edit') as HTMLElement).onclick = () => this.triggerEdit(route);
                 (tr.querySelector('.action-plugins') as HTMLElement).onclick = () => this.triggerPlugins(route);
@@ -246,9 +247,22 @@ export class UI {
 
                 tbody.appendChild(tr);
             });
+
+            this.syncSelectAllCheckbox(routes, selectedSet);
         } catch (e: any) {
             console.error('Error rendering routes', e);
         }
+    }
+
+    syncSelectAllCheckbox(routes: Route[], selectedSet: Set<string>) {
+        const selectAll = this.els.selectAll as HTMLInputElement | null;
+        if (!selectAll) return;
+
+        const routeIds = routes.map(route => route.id).filter(Boolean) as string[];
+        const selectedVisibleCount = routeIds.filter(routeId => selectedSet.has(routeId)).length;
+
+        selectAll.checked = routeIds.length > 0 && selectedVisibleCount === routeIds.length;
+        selectAll.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < routeIds.length;
     }
 
     renderMethodBadges(methods: string[]) {
