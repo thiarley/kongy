@@ -173,6 +173,8 @@ npm run build
 
 Na tela de rotas, a barra de acoes inclui um botao para baixar um arquivo `routes-import-example.json` com um exemplo valido de importacao.
 
+O fluxo de importacao agora mostra um resumo antes da execucao e um modal final com sucessos e falhas por rota/plugin. A importacao de rotas sempre usa o servico atualmente selecionado na interface, e o JSON exportado nao inclui `service.id`.
+
 ---
 
 ## 🐳 Docker Production

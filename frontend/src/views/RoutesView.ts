@@ -6,11 +6,105 @@ import { api } from '../services/api';
 import { i18n } from '../services/i18n';
 import { UI } from '../ui';
 import { store } from '../store';
-import { showToast, setBusy } from '../utils';
+import { showToast, setBusy, escapeHtml } from '../utils';
 import { confirmAction } from './shared';
 
 export interface RoutesViewCallbacks {
     switchView: (view: string) => void;
+}
+
+interface ImportFailure {
+    kind: 'route' | 'plugin';
+    routeName: string;
+    pluginName?: string;
+    message: string;
+}
+
+function sanitizeExportedPlugin(plugin: any) {
+    const { id, created_at, updated_at, route, service, consumer, ...pluginData } = plugin;
+    return pluginData;
+}
+
+function sanitizeExportedRoute(route: any) {
+    const { raw, source, service, id, created_at, updated_at, ...routeData } = route;
+    return routeData;
+}
+
+function getImportRouteLabel(route: any, index: number): string {
+    return route.name || route.id || `route-${index + 1}`;
+}
+
+function getImportErrorMessage(error: any): string {
+    return error?.message || error?.detail || i18n.t('messages.error');
+}
+
+function buildImportResultHtml(
+    routeCount: number,
+    pluginCount: number,
+    successCount: number,
+    pluginSuccessCount: number,
+    failures: ImportFailure[]
+): string {
+    const failureItems = failures.length === 0
+        ? '<li>Nenhuma falha registrada.</li>'
+        : failures.map(failure => `
+            <li style="margin-bottom: 8px;">
+                <strong>${escapeHtml(failure.routeName)}</strong>
+                ${failure.pluginName ? ` / plugin <code>${escapeHtml(failure.pluginName)}</code>` : ''}
+                <br>
+                <span style="opacity: 0.85;">${escapeHtml(failure.message)}</span>
+            </li>
+        `).join('');
+
+    return `
+        <div style="text-align: left;">
+            <p><strong>Rotas no arquivo:</strong> ${routeCount}</p>
+            <p><strong>Plugins no arquivo:</strong> ${pluginCount}</p>
+            <p><strong>Rotas importadas:</strong> ${successCount}</p>
+            <p><strong>Plugins importados:</strong> ${pluginSuccessCount}</p>
+            <p><strong>Falhas:</strong> ${failures.length}</p>
+            <div style="margin-top: 16px; max-height: 260px; overflow: auto; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 12px;">
+                <strong>Detalhes</strong>
+                <ul style="margin: 12px 0 0 18px; padding: 0;">
+                    ${failureItems}
+                </ul>
+            </div>
+        </div>
+    `;
+}
+
+async function showImportPreview(routesList: any[], currentServiceId: string) {
+    const pluginCount = routesList.reduce((total, route) => total + (Array.isArray(route.plugins) ? route.plugins.length : 0), 0);
+    const requiresSelectedService = !currentServiceId;
+
+    // @ts-ignore - Swal is global
+    return Swal.fire({
+        title: 'Resumo da importacao',
+        icon: requiresSelectedService ? 'warning' : 'info',
+        html: `
+            <div style="text-align: left;">
+                <p><strong>Rotas encontradas:</strong> ${routesList.length}</p>
+                <p><strong>Plugins encontrados:</strong> ${pluginCount}</p>
+                <p><strong>Servico de destino:</strong> ${currentServiceId ? `<code>${escapeHtml(currentServiceId)}</code>` : 'nenhum'}</p>
+                ${requiresSelectedService ? `
+                    <div style="margin-top: 12px; padding: 12px; border-radius: 8px; background: rgba(245, 158, 11, 0.1);">
+                        Escolha primeiro um servico na interface.
+                        A importacao de rotas sempre usa o servico atualmente selecionado.
+                    </div>
+                ` : `
+                    <div style="margin-top: 12px; padding: 12px; border-radius: 8px; background: rgba(59, 130, 246, 0.1);">
+                        O <code>service.id</code> do arquivo sera ignorado, se existir.
+                        Todas as rotas serao importadas para o servico selecionado.
+                    </div>
+                `}
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: requiresSelectedService ? 'Fechar' : 'Importar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33'
+    });
 }
 
 export async function refreshRoutes() {
@@ -60,14 +154,10 @@ export function handleExportRoutes() {
     const routes = store.state.routes
         .filter(r => selectedIds.has(r.id))
         .map(r => {
-            const plugins = store.getRoutePlugins(r.id).map(p => {
-                const { ...pData } = p;
-                return pData;
-            });
-
-            const { raw, source, ...rData } = r as any;
+            const plugins = store.getRoutePlugins(r.id).map(sanitizeExportedPlugin);
+            const rData = sanitizeExportedRoute(r as any);
             return {
-                ...raw,
+                ...rData,
                 plugins: plugins
             };
         });
@@ -143,23 +233,24 @@ export function handleLoadFile(event: any) {
                 throw new Error(i18n.t('messages.import_error'));
             }
 
+            const currentServiceId = api.getServiceId();
+            const preview = await showImportPreview(routesList, currentServiceId);
+            if (!preview.isConfirmed || !currentServiceId) {
+                event.target.value = '';
+                return;
+            }
+
             setBusy(document.getElementById('routesTable'), true);
 
             let count = 0;
-            let errors = 0;
-            let pluginErrors = 0;
+            let pluginSuccessCount = 0;
+            const failures: ImportFailure[] = [];
 
-            const currentServiceId = api.getServiceId();
-
-            for (const r of routesList) {
+            for (const [index, r] of routesList.entries()) {
+                const routeLabel = getImportRouteLabel(r, index);
                 try {
                     const { id, created_at, updated_at, service, plugins, ...payload } = r;
-
-                    if (currentServiceId) {
-                        payload.service = { id: currentServiceId };
-                    } else if (service && service.id) {
-                        payload.service = { id: service.id };
-                    }
+                    payload.service = { id: currentServiceId };
 
                     const newRoute = await api.saveRoute(payload);
                     count++;
@@ -170,32 +261,59 @@ export function handleLoadFile(event: any) {
                                 const { id: pId, created_at: pCa, updated_at: pUa, route: pRoute, ...pPayload } = p;
                                 pPayload.route = { id: newRoute.id };
                                 await api.createPlugin(pPayload);
+                                pluginSuccessCount++;
                             } catch (pEx) {
                                 console.error('Failed to import plugin', p, pEx);
-                                pluginErrors++;
+                                failures.push({
+                                    kind: 'plugin',
+                                    routeName: routeLabel,
+                                    pluginName: p.name,
+                                    message: getImportErrorMessage(pEx)
+                                });
                             }
                         }
                     }
 
                 } catch (innerEx) {
                     console.error('Failed to import route', r, innerEx);
-                    errors++;
+                    failures.push({
+                        kind: 'route',
+                        routeName: routeLabel,
+                        message: getImportErrorMessage(innerEx)
+                    });
                 }
             }
 
             setBusy(document.getElementById('routesTable'), false);
-            refreshRoutes();
+            await refreshRoutes();
 
-            let msg = i18n.t('messages.import_success', { count });
-            if (errors > 0 || pluginErrors > 0) {
-                msg = i18n.t('messages.batch_partial', { success: count, errors: errors + pluginErrors });
+            const pluginCount = routesList.reduce(
+                (total: number, route: any) => total + (Array.isArray(route.plugins) ? route.plugins.length : 0),
+                0
+            );
+            const html = buildImportResultHtml(routesList.length, pluginCount, count, pluginSuccessCount, failures);
+
+            // @ts-ignore - Swal is global
+            await Swal.fire({
+                title: failures.length > 0 ? 'Resultado da importacao' : 'Importacao concluida',
+                icon: failures.length > 0 ? 'warning' : 'success',
+                html,
+                width: 760,
+                confirmButtonText: 'Fechar',
+                confirmButtonColor: '#3085d6'
+            });
+
+            if (failures.length === 0) {
+                showToast(i18n.t('messages.import_success', { count }), 'success');
+            } else {
+                showToast(i18n.t('messages.batch_partial', { success: count, errors: failures.length }), 'warning');
             }
-
-            showToast(msg, errors > 0 ? 'warning' : 'success');
 
         } catch (err: any) {
             setBusy(document.getElementById('routesTable'), false);
             showToast(`${i18n.t('messages.import_error')}: ${err.message}`, 'error');
+        } finally {
+            event.target.value = '';
         }
     };
     reader.readAsText(file);

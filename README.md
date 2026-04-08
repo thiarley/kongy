@@ -172,6 +172,8 @@ npm run build
 
 On the routes screen, the actions bar includes a button to download a `routes-import-example.json` file with a valid import example.
 
+The import flow now shows a summary before execution and a result modal afterwards with successes and failures per route/plugin. Route import always uses the currently selected service in the UI, and exported route JSON does not include `service.id`.
+
 ---
 
 ## 🐳 Docker Production
