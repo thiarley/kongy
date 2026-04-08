@@ -322,13 +322,23 @@ class API {
 
     // ==================== System Settings ====================
 
+    async getConnectionConfig() {
+        return this.fetchApi(METHODS.GET, '/system/config/connection');
+    }
+
     async updateConnectionConfig(url: string) {
         const res = await fetch('/api/system/config/connection', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...auth.getAuthHeaders()
+            },
             body: JSON.stringify({ kong_admin_url: url })
         });
-        if (!res.ok) throw new Error('Failed to update connection');
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.detail || 'Failed to update connection');
+        }
         return res.json();
     }
 

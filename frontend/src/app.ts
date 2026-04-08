@@ -246,6 +246,9 @@ export class App {
         document.getElementById('routeSearch')?.addEventListener('input', (e) => {
             store.setSearchFilter((e.target as HTMLInputElement).value);
         });
+        document.getElementById('consumerSearch')?.addEventListener('input', () => {
+            this.ui.renderConsumers(store.state.consumers);
+        });
 
         document.getElementById('selectAllRoutes')?.addEventListener('change', (e) => {
             store.selectAllRoutes((e.target as HTMLInputElement).checked);
@@ -411,15 +414,22 @@ export class App {
         // --- Settings Action ---
         document.getElementById('settingsBtn')?.addEventListener('click', () => {
             this.ui.openModal('settingsModal');
+            api.getConnectionConfig()
+                .then((config: any) => {
+                    const input = document.getElementById('conf_kong_url') as HTMLInputElement;
+                    if (input) input.value = config.kong_admin_url || '';
+                })
+                .catch((e: any) => {
+                    showToast(`${i18n.t('messages.connection_error')}: ${e.message}`, 'error');
+                });
         });
 
         document.getElementById('saveSettingsBtn')?.addEventListener('click', async () => {
-            // ... (settings implementation) ...
             const url = (document.getElementById('conf_kong_url') as HTMLInputElement).value;
             if (!url) return showToast(i18n.t('errors.required'), 'warning');
 
             try {
-                const res = await api.getNodeStatus();
+                await api.updateConnectionConfig(url);
                 showToast(i18n.t('messages.connection_success'), 'success');
                 this.ui.closeModal('settingsModal');
             } catch (e: any) {

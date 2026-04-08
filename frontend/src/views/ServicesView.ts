@@ -29,6 +29,7 @@ export async function loadServicesView(ui: UI, callbacks: ServicesViewCallbacks)
 }
 
 export function handleAddService(ui: UI, callbacks: ServicesViewCallbacks) {
+    ui.clearServiceForm();
     ui.openModal('serviceModal');
 
     const btn = document.getElementById('saveServiceBtn');
@@ -67,6 +68,9 @@ export function bindServiceCallbacks(
 
     // Edit service
     ui.triggerServiceEdit = (svc: any) => {
+        const title = document.getElementById('serviceModalTitle');
+        if (title) title.textContent = `${i18n.t('actions.edit')} ${i18n.t('services.entity')}`;
+
         ui.openModal('serviceModal');
         (document.getElementById('svc_name') as HTMLInputElement).value = svc.name || '';
         (document.getElementById('svc_host') as HTMLInputElement).value = svc.host || '';

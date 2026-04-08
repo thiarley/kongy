@@ -54,7 +54,7 @@ export class UI {
             batchBtn: document.getElementById('batchEditBtn'),
             deleteBtn: document.getElementById('deleteSelectedBtn'),
             pluginBtn: document.getElementById('pluginBatchBtn'),
-            searchInput: document.getElementById('routeSearch'),
+            searchInput: document.getElementById('consumerSearch'),
             selectAll: document.getElementById('selectAllRoutes'),
             serviceList: document.getElementById('serviceList'),
             serviceBadge: document.getElementById('currentServiceBadge'),
@@ -404,6 +404,9 @@ export class UI {
                 }
                 el.querySelectorAll('.batch-field-check').forEach((cb: any) => cb.checked = false);
             }
+            if (id === 'serviceModal') {
+                this.clearServiceForm();
+            }
         }
     }
 
@@ -627,6 +630,18 @@ export class UI {
 
         const jsonEditor = document.getElementById('jsonEditor') as HTMLTextAreaElement;
         if (jsonEditor) jsonEditor.value = '{}';
+    }
+
+    clearServiceForm() {
+        const nameInput = document.getElementById('svc_name') as HTMLInputElement;
+        const hostInput = document.getElementById('svc_host') as HTMLInputElement;
+        const title = document.getElementById('serviceModalTitle');
+
+        if (nameInput) nameInput.value = '';
+        if (hostInput) hostInput.value = '';
+        if (title) {
+            title.innerHTML = `<span data-i18n="actions.new">Novo</span> <span data-i18n="services.entity">Serviço</span>`;
+        }
     }
 
     setBatchMode(active: boolean, count: number = 0) {
