@@ -1,5 +1,7 @@
 import { PLUGIN_ICONS } from './constants';
 
+const incrementalRenderTokens = new Map<string, number>();
+
 // ==================== Toast Notifications ====================
 
 /**
@@ -249,4 +251,66 @@ export function readFileAsText(file: File): Promise<string> {
         reader.onerror = reject;
         reader.readAsText(file);
     });
+}
+
+// ==================== Incremental Rendering ====================
+
+interface IncrementalRenderOptions<T> {
+    key: string;
+    container: HTMLElement;
+    items: T[];
+    renderItem: (item: T, index: number) => HTMLElement;
+    emptyHtml?: string;
+    batchSize?: number;
+    onComplete?: () => void;
+}
+
+function nextFrame(): Promise<void> {
+    return new Promise(resolve => requestAnimationFrame(() => resolve()));
+}
+
+export function renderIncrementally<T>({
+    key,
+    container,
+    items,
+    renderItem,
+    emptyHtml,
+    batchSize = 40,
+    onComplete
+}: IncrementalRenderOptions<T>) {
+    const token = (incrementalRenderTokens.get(key) || 0) + 1;
+    incrementalRenderTokens.set(key, token);
+
+    container.innerHTML = '';
+
+    if (items.length === 0) {
+        if (emptyHtml) {
+            container.innerHTML = emptyHtml;
+        }
+        onComplete?.();
+        return;
+    }
+
+    void (async () => {
+        for (let index = 0; index < items.length; index += batchSize) {
+            if (incrementalRenderTokens.get(key) !== token) {
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            const slice = items.slice(index, index + batchSize);
+            slice.forEach((item, sliceIndex) => {
+                fragment.appendChild(renderItem(item, index + sliceIndex));
+            });
+            container.appendChild(fragment);
+
+            if (index + batchSize < items.length) {
+                await nextFrame();
+            }
+        }
+
+        if (incrementalRenderTokens.get(key) === token) {
+            onComplete?.();
+        }
+    })();
 }

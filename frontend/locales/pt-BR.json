@@ -165,7 +165,8 @@
     "toggle_off": "Plugin desativado",
     "select_placeholder": "Selecione um plugin...",
     "auth_forbidden": "Plugins de autenticação não permitidos neste contexto",
-    "batch_create_success": "Batch: {count} plugins criados."
+    "batch_create_success": "Batch: {count} plugins criados.",
+    "list_hint": "Separe os valores por vírgula para campos de lista (array/set)."
   },
   "consumers": {
     "title": "Consumers",

@@ -5,7 +5,7 @@
 import { api } from '../services/api';
 import { i18n } from '../services/i18n';
 import { UI } from '../ui';
-import { showToast } from '../utils';
+import { showToast, renderIncrementally } from '../utils';
 import { confirmAction } from './shared';
 
 export interface UpstreamsViewCallbacks {
@@ -20,40 +20,44 @@ export async function loadUpstreamsView(ui: UI, callbacks: UpstreamsViewCallback
         const tbody = document.querySelector('#upstreamsTable tbody');
 
         if (tbody) {
-            tbody.innerHTML = (data.data || []).map((u: any) => `
-                <tr>
-                    <td class="fw-bold">${u.name}</td>
-                    <td>${u.algorithm}</td>
-                    <td>${u.slots}</td>
-                    <td>-</td>
-                    <td>
-                        <button class="btn-icon text-primary upstream-targets" data-id="${u.id}" data-name="${u.name}" title="${i18n.t('actions.manage_targets')}"><i class="ph ph-crosshair"></i></button>
-                    </td>
-                    <td>
-                        <button class="btn-icon text-primary upstream-edit" data-id="${u.id}" title="${i18n.t('actions.edit')}"><i class="ph ph-pencil-simple"></i></button>
-                        <button class="btn-icon text-danger upstream-del" data-id="${u.id}" data-name="${u.name}" title="${i18n.t('actions.delete')}"><i class="ph ph-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
+            const upstreams = data.data || [];
+            if (upstreams.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted p-4">${i18n.t('messages.no_data')}</td></tr>`;
+                return;
+            }
 
-            // Bind Edit
-            tbody.querySelectorAll('.upstream-edit').forEach((btn: any) => {
-                btn.onclick = () => handleEditUpstream(ui, btn.dataset.id, callbacks);
-            });
+            renderIncrementally({
+                key: 'upstreams',
+                container: tbody as HTMLElement,
+                items: upstreams,
+                batchSize: 40,
+                renderItem: (u: any) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="fw-bold">${u.name}</td>
+                        <td>${u.algorithm}</td>
+                        <td>${u.slots}</td>
+                        <td>-</td>
+                        <td>
+                            <button class="btn-icon text-primary upstream-targets" title="${i18n.t('actions.manage_targets')}"><i class="ph ph-crosshair"></i></button>
+                        </td>
+                        <td>
+                            <button class="btn-icon text-primary upstream-edit" title="${i18n.t('actions.edit')}"><i class="ph ph-pencil-simple"></i></button>
+                            <button class="btn-icon text-danger upstream-del" title="${i18n.t('actions.delete')}"><i class="ph ph-trash"></i></button>
+                        </td>
+                    `;
 
-            // Bind Targets
-            tbody.querySelectorAll('.upstream-targets').forEach((btn: any) => {
-                btn.onclick = () => loadTargetsView(ui, btn.dataset.id, btn.dataset.name);
-            });
+                    (tr.querySelector('.upstream-edit') as HTMLElement).onclick = () => handleEditUpstream(ui, u.id, callbacks);
+                    (tr.querySelector('.upstream-targets') as HTMLElement).onclick = () => loadTargetsView(ui, u.id, u.name);
+                    (tr.querySelector('.upstream-del') as HTMLElement).onclick = async () => {
+                        if (await confirmAction(i18n.t('upstreams.delete_confirm'))) {
+                            await api.deleteUpstream(u.id);
+                            loadUpstreamsView(ui, callbacks);
+                        }
+                    };
 
-            // Bind Delete
-            tbody.querySelectorAll('.upstream-del').forEach((btn: any) => {
-                btn.onclick = async () => {
-                    if (await confirmAction(i18n.t('upstreams.delete_confirm'))) {
-                        await api.deleteUpstream(btn.dataset.id);
-                        loadUpstreamsView(ui, callbacks);
-                    }
-                };
+                    return tr;
+                }
             });
         }
     } catch (e: any) {

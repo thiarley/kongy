@@ -5,7 +5,7 @@
 import { api } from '../services/api';
 import { i18n } from '../services/i18n';
 import { UI } from '../ui';
-import { showToast } from '../utils';
+import { showToast, renderIncrementally } from '../utils';
 import { confirmAction } from './shared';
 
 export interface CertificatesViewCallbacks {
@@ -20,30 +20,40 @@ export async function loadCertificatesView(ui: UI, callbacks: CertificatesViewCa
         const tbody = document.querySelector('#certificatesTable tbody');
 
         if (tbody) {
-            tbody.innerHTML = (data.data || []).map((c: any) => `
-                <tr>
-                    <td class="font-monospace small">${c.id.substring(0, 8)}...</td>
-                    <td>${(c.snis || []).join(', ')}</td>
-                    <td>${(c.tags || []).join(', ')}</td>
-                    <td>${new Date(c.created_at * 1000).toLocaleDateString()}</td>
-                    <td>
-                         <button class="btn-icon text-primary cert-edit" data-id="${c.id}"><i class="ph ph-pencil-simple"></i></button>
-                         <button class="btn-icon text-danger cert-del" data-id="${c.id}"><i class="ph ph-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
+            const certificates = data.data || [];
+            if (certificates.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-4">${i18n.t('messages.no_data')}</td></tr>`;
+                return;
+            }
 
-            tbody.querySelectorAll('.cert-del').forEach((btn: any) => {
-                btn.onclick = async () => {
-                    if (await confirmAction(i18n.t('certificates.delete_confirm'))) {
-                        await api.deleteCertificate(btn.dataset.id);
-                        loadCertificatesView(ui, callbacks);
-                    }
-                };
-            });
+            renderIncrementally({
+                key: 'certificates',
+                container: tbody as HTMLElement,
+                items: certificates,
+                batchSize: 40,
+                renderItem: (c: any) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="font-monospace small">${c.id.substring(0, 8)}...</td>
+                        <td>${(c.snis || []).join(', ')}</td>
+                        <td>${(c.tags || []).join(', ')}</td>
+                        <td>${new Date(c.created_at * 1000).toLocaleDateString()}</td>
+                        <td>
+                             <button class="btn-icon text-primary cert-edit"><i class="ph ph-pencil-simple"></i></button>
+                             <button class="btn-icon text-danger cert-del"><i class="ph ph-trash"></i></button>
+                        </td>
+                    `;
 
-            tbody.querySelectorAll('.cert-edit').forEach((btn: any) => {
-                btn.onclick = () => handleEditCertificate(ui, btn.dataset.id, callbacks);
+                    (tr.querySelector('.cert-del') as HTMLElement).onclick = async () => {
+                        if (await confirmAction(i18n.t('certificates.delete_confirm'))) {
+                            await api.deleteCertificate(c.id);
+                            loadCertificatesView(ui, callbacks);
+                        }
+                    };
+
+                    (tr.querySelector('.cert-edit') as HTMLElement).onclick = () => handleEditCertificate(ui, c.id, callbacks);
+                    return tr;
+                }
             });
         }
     } catch (e: any) {

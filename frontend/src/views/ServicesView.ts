@@ -9,7 +9,7 @@ import { showToast } from '../utils';
 
 export interface ServicesViewCallbacks {
     switchView: (view: string) => void;
-    updateServiceContext: (id: string | null) => void;
+    updateServiceContext: (service: any | null, syncUrl?: boolean) => void;
     refreshRoutes: () => Promise<void>;
 }
 
@@ -20,7 +20,10 @@ export async function loadServicesView(ui: UI, callbacks: ServicesViewCallbacks)
     try {
         if (loadingEl) loadingEl.classList.remove('hidden');
         const data = await api.getServices();
-        ui.renderServices(data.data || [], api.getServiceId());
+        const services = data.data || [];
+        ui.renderServices(services, api.getServiceId());
+        const selectedService = services.find((service: any) => service.id === api.getServiceId()) || null;
+        callbacks.updateServiceContext(selectedService, false);
     } catch (e: any) {
         showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
     } finally {
@@ -61,7 +64,7 @@ export function bindServiceCallbacks(
     // Select service
     ui.triggerServiceSelect = (svc: any) => {
         api.setServiceId(svc.id);
-        callbacks.updateServiceContext(svc.id);
+        callbacks.updateServiceContext(svc, false);
         callbacks.switchView('ROUTES');
         callbacks.refreshRoutes();
     };

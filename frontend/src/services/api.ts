@@ -114,10 +114,33 @@ class API {
         return this.fetchApi(method, `/kong${endpoint}`, body);
     }
 
+    private async fetchAllPages<T>(endpoint: string): Promise<ApiResponse<T>> {
+        const items: T[] = [];
+        let nextEndpoint = endpoint;
+
+        while (nextEndpoint) {
+            const response = await this.fetchKong(METHODS.GET, nextEndpoint);
+            items.push(...(response.data || []));
+
+            if (!response.next) {
+                break;
+            }
+
+            try {
+                const nextUrl = new URL(response.next);
+                nextEndpoint = `${nextUrl.pathname}${nextUrl.search}`;
+            } catch {
+                nextEndpoint = response.next;
+            }
+        }
+
+        return { data: items };
+    }
+
     // ==================== Services ====================
 
     async getServices(): Promise<ApiResponse<Service>> {
-        return this.fetchKong(METHODS.GET, '/services');
+        return this.fetchAllPages<Service>('/services');
     }
 
     async getService(id: string): Promise<Service> {
@@ -140,11 +163,11 @@ class API {
 
     async getRoutes(): Promise<ApiResponse<Route>> {
         if (!this.serviceId) return { data: [] }; // Optionally throw
-        return this.fetchKong(METHODS.GET, `/services/${this.serviceId}/routes`);
+        return this.fetchAllPages<Route>(`/services/${this.serviceId}/routes`);
     }
 
     async getAllRoutes(): Promise<ApiResponse<Route>> {
-        return this.fetchKong(METHODS.GET, '/routes');
+        return this.fetchAllPages<Route>('/routes');
     }
 
     async saveRoute(routeData: Partial<Route>, isUpdate = false) {
@@ -178,30 +201,11 @@ class API {
         if (routeId) endpoint = `/routes/${routeId}/plugins`;
         else if (serviceId) endpoint = `/services/${serviceId}/plugins`;
 
-        return this.fetchKong(METHODS.GET, endpoint);
+        return this.fetchAllPages<Plugin>(endpoint);
     }
 
     async getAllPlugins(): Promise<ApiResponse<Plugin>> {
-        const plugins: Plugin[] = [];
-        let endpoint = '/plugins';
-
-        while (endpoint) {
-            const response = await this.fetchKong(METHODS.GET, endpoint);
-            plugins.push(...(response.data || []));
-
-            if (!response.next) {
-                break;
-            }
-
-            try {
-                const nextUrl = new URL(response.next);
-                endpoint = `${nextUrl.pathname}${nextUrl.search}`;
-            } catch {
-                endpoint = response.next;
-            }
-        }
-
-        return { data: plugins };
+        return this.fetchAllPages<Plugin>('/plugins');
     }
 
     async getPluginSchema(pluginName: string): Promise<any> {
@@ -248,7 +252,7 @@ class API {
     // ==================== Consumers ====================
 
     async getConsumers(): Promise<ApiResponse<Consumer>> {
-        return this.fetchKong(METHODS.GET, '/consumers');
+        return this.fetchAllPages<Consumer>('/consumers');
     }
 
     async createConsumer(data: Partial<Consumer>) {
@@ -309,7 +313,7 @@ class API {
     // ==================== Upstreams ====================
 
     async getUpstreams(): Promise<ApiResponse<Upstream>> {
-        return this.fetchKong(METHODS.GET, '/upstreams');
+        return this.fetchAllPages<Upstream>('/upstreams');
     }
 
     async createUpstream(data: Partial<Upstream>) {
@@ -341,14 +345,14 @@ class API {
     }
 
     // ==================== Service Routes ====================
-    async getServiceRoutes(serviceId: string) {
-        return this.fetchKong(METHODS.GET, `/services/${serviceId}/routes`);
+    async getServiceRoutes(serviceId: string): Promise<ApiResponse<Route>> {
+        return this.fetchAllPages<Route>(`/services/${serviceId}/routes`);
     }
 
     // ==================== Certificates ====================
 
     async getCertificates(): Promise<ApiResponse<Certificate>> {
-        return this.fetchKong(METHODS.GET, '/certificates');
+        return this.fetchAllPages<Certificate>('/certificates');
     }
 
     async createCertificate(data: Partial<Certificate>) {

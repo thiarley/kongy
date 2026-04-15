@@ -6,9 +6,10 @@ import {
     truncate,
     parseCommaSeparated,
     joinWithComma,
-    $
+    $,
+    renderIncrementally
 } from './utils';
-import { Route, Consumer, Plugin } from './types/kong';
+import { Route, Consumer, Plugin, Service } from './types/kong';
 import { i18n } from './services/i18n';
 
 export class UI {
@@ -41,6 +42,8 @@ export class UI {
             selectAll: null,
             serviceList: null,
             serviceBadge: null,
+            serviceMeta: null,
+            serviceEditBtn: null,
             routesContent: null,
             consumersContent: null
         };
@@ -58,6 +61,8 @@ export class UI {
             selectAll: document.getElementById('selectAllRoutes'),
             serviceList: document.getElementById('serviceList'),
             serviceBadge: document.getElementById('currentServiceBadge'),
+            serviceMeta: document.getElementById('currentServiceMeta'),
+            serviceEditBtn: document.getElementById('editServiceContextBtn'),
             routesContent: document.getElementById('view-routes-content'),
             consumersContent: document.getElementById('view-consumers-content')
         };
@@ -79,8 +84,6 @@ export class UI {
         const container = this.els.serviceList;
         if (!container) return;
 
-        container.innerHTML = '';
-
         if (services.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
@@ -91,16 +94,21 @@ export class UI {
             return;
         }
 
-        services.forEach(svc => {
-            const el = document.createElement('div');
-            el.className = `service-card ${svc.id === currentId ? 'active' : ''}`;
+        renderIncrementally({
+            key: 'services',
+            container,
+            items: services,
+            batchSize: 24,
+            renderItem: (svc: any) => {
+                const el = document.createElement('div');
+                el.className = `service-card ${svc.id === currentId ? 'active' : ''}`;
 
-            const protocol = svc.protocol || 'http';
-            const host = svc.host || '-';
-            const port = svc.port ? `:${svc.port}` : '';
-            const path = svc.path ? svc.path : '';
+                const protocol = svc.protocol || 'http';
+                const host = svc.host || '-';
+                const port = svc.port ? `:${svc.port}` : '';
+                const path = svc.path ? svc.path : '';
 
-            el.innerHTML = `
+                el.innerHTML = `
                 <div class="svc-header">
                     <div class="svc-name">${escapeHtml(svc.name || i18n.t('actions.new'))}</div>
                     <div class="svc-actions">
@@ -122,22 +130,23 @@ export class UI {
                 </div>
             `;
 
-            el.onclick = () => this.triggerServiceSelect(svc);
+                el.onclick = () => this.triggerServiceSelect(svc);
 
-            (el.querySelector('.svc-plugins') as HTMLElement).onclick = (e) => {
-                e.stopPropagation();
-                this.triggerServicePlugins(svc);
-            };
-            (el.querySelector('.svc-edit') as HTMLElement).onclick = (e) => {
-                e.stopPropagation();
-                this.triggerServiceEdit(svc);
-            };
-            (el.querySelector('.svc-delete') as HTMLElement).onclick = (e) => {
-                e.stopPropagation();
-                this.triggerServiceDelete(svc);
-            };
+                (el.querySelector('.svc-plugins') as HTMLElement).onclick = (e) => {
+                    e.stopPropagation();
+                    this.triggerServicePlugins(svc);
+                };
+                (el.querySelector('.svc-edit') as HTMLElement).onclick = (e) => {
+                    e.stopPropagation();
+                    this.triggerServiceEdit(svc);
+                };
+                (el.querySelector('.svc-delete') as HTMLElement).onclick = (e) => {
+                    e.stopPropagation();
+                    this.triggerServiceDelete(svc);
+                };
 
-            container.appendChild(el);
+                return el;
+            }
         });
     }
 
@@ -150,8 +159,6 @@ export class UI {
         }
 
         try {
-            tbody.innerHTML = '';
-
             if (routes.length === 0) {
                 tbody.innerHTML = `
                     <tr>
@@ -164,7 +171,12 @@ export class UI {
                 return;
             }
 
-            routes.forEach(route => {
+            renderIncrementally({
+                key: 'routes',
+                container: tbody as HTMLElement,
+                items: routes,
+                batchSize: 40,
+                renderItem: (route: Route) => {
                 const tr = document.createElement('tr');
                 const isSelected = !!route.id && selectedSet.has(route.id);
                 if (isSelected) tr.classList.add('selected-row');
@@ -245,10 +257,10 @@ export class UI {
                     import('./utils').then(({ showToast }) => showToast(i18n.t('messages.copied'), 'success'));
                 };
 
-                tbody.appendChild(tr);
+                return tr;
+                },
+                onComplete: () => this.syncSelectAllCheckbox(routes, selectedSet)
             });
-
-            this.syncSelectAllCheckbox(routes, selectedSet);
         } catch (e: any) {
             console.error('Error rendering routes', e);
         }
@@ -301,8 +313,6 @@ export class UI {
         const tbody = this.els.consumersTable;
         if (!tbody) return;
 
-        tbody.innerHTML = '';
-
         const term = ((this.els.searchInput as HTMLInputElement)?.value || '').toLowerCase();
         const filtered = consumers.filter(c =>
             (c.username || '').toLowerCase().includes(term) ||
@@ -321,7 +331,12 @@ export class UI {
             return;
         }
 
-        filtered.forEach(c => {
+        renderIncrementally({
+            key: 'consumers',
+            container: tbody,
+            items: filtered,
+            batchSize: 40,
+            renderItem: (c: Consumer) => {
             const tr = document.createElement('tr');
             const created = formatDate(c.created_at);
             const tags = c.tags || [];
@@ -350,8 +365,37 @@ export class UI {
             (tr.querySelector('.action-details') as HTMLElement).onclick = () => this.triggerConsumerDetails(c);
             (tr.querySelector('.action-del') as HTMLElement).onclick = () => this.triggerConsumerDelete(c);
 
-            tbody.appendChild(tr);
+            return tr;
+            }
         });
+    }
+
+    updateSelectedService(service: Service | null) {
+        const sidebarContainer = document.getElementById('sidebarServiceContext');
+        const badge = this.els.serviceBadge;
+        const metaEl = this.els.serviceMeta;
+        const editBtn = this.els.serviceEditBtn;
+
+        if (!service) {
+            if (sidebarContainer) sidebarContainer.classList.add('hidden');
+            if (badge) badge.textContent = '...';
+            if (metaEl) metaEl.textContent = '';
+            if (editBtn) editBtn.onclick = null;
+            return;
+        }
+
+        const protocol = service.protocol || 'http';
+        const host = service.host || '-';
+        const port = service.port ? `:${service.port}` : '';
+        const path = service.path || '';
+        const meta = `${protocol}://${host}${port}${path}`;
+
+        if (sidebarContainer) sidebarContainer.classList.remove('hidden');
+        if (badge) badge.textContent = service.name || service.id;
+        if (metaEl) metaEl.textContent = meta;
+        if (editBtn) {
+            editBtn.onclick = () => this.triggerServiceEdit(service);
+        }
     }
 
     renderStats() {
@@ -859,13 +903,16 @@ export class UI {
                         data-type="number"
                         value="${currentValue}">
                 `;
-            } else if (meta.type === 'array') {
+            } else if (meta.type === 'array' || meta.type === 'set') {
                 html += `
-                    <input type="text" class="form-control plugin-config-field text-gray-400" 
+                    <input type="text" class="form-control plugin-config-field" 
                         data-field="${fieldName}" 
-                        data-type="array"
+                        data-type="${meta.type}"
                         value="${Array.isArray(currentValue) ? currentValue.join(', ') : currentValue}"
                         placeholder="valor1, valor2...">
+                    <small class="text-muted" style="display: block; margin-top: 4px; font-size: 0.75rem;">
+                        <i class="ph ph-info"></i> ${i18n.t('plugins.list_hint') || 'Separe os valores por vírgula'}
+                    </small>
                 `;
             } else {
                 html += `

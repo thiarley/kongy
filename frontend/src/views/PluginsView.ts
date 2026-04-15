@@ -170,7 +170,7 @@ export async function handleSavePluginConfig(ui: UI) {
         const type = input.dataset.type;
         if (type === 'boolean') config[field] = input.checked;
         else if (type === 'number') config[field] = parseFloat(input.value) || 0;
-        else if (type === 'array') config[field] = input.value ? input.value.split(',').map((s: string) => s.trim()) : [];
+        else if (type === 'array' || type === 'set') config[field] = input.value ? input.value.split(',').map((s: string) => s.trim()) : [];
         else config[field] = input.value;
     });
 

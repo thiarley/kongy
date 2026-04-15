@@ -8,6 +8,7 @@ Provides:
 """
 
 from collections import defaultdict
+import hashlib
 import time
 from typing import Dict, List
 
@@ -32,7 +33,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     
     async def dispatch(self, request: Request, call_next) -> Response:
-        client_ip = self._get_client_ip(request)
+        client_key = self._get_rate_limit_key(request)
         current_time = time.time()
         
         # Skip rate limiting for health checks, but still add security headers
@@ -43,12 +44,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         # Clean old entries
         window_start = current_time - settings.RATE_LIMIT_WINDOW
-        _request_counts[client_ip] = [
-            t for t in _request_counts[client_ip] if t > window_start
+        _request_counts[client_key] = [
+            t for t in _request_counts[client_key] if t > window_start
         ]
         
         # Check rate limit
-        if len(_request_counts[client_ip]) >= settings.RATE_LIMIT_REQUESTS:
+        if len(_request_counts[client_key]) >= settings.RATE_LIMIT_REQUESTS:
             response = JSONResponse(
                 status_code=429,
                 content={"detail": "Too many requests. Please slow down."}
@@ -58,7 +59,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return response
         
         # Record this request
-        _request_counts[client_ip].append(current_time)
+        _request_counts[client_key].append(current_time)
         
         # Process request
         response = await call_next(request)
@@ -92,6 +93,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         # Fall back to direct client IP
         return request.client.host if request.client else "unknown"
+
+    def _get_rate_limit_key(self, request: Request) -> str:
+        """Prefer authenticated token identity over plain shared IPs."""
+        client_ip = self._get_client_ip(request)
+        auth_header = request.headers.get("Authorization", "").strip()
+
+        if auth_header:
+            token_hash = hashlib.sha256(auth_header.encode("utf-8")).hexdigest()[:16]
+            return f"{client_ip}:{token_hash}"
+
+        return client_ip
 
 
 async def check_login_rate_limit(request: Request) -> None:

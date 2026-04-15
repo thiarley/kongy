@@ -135,7 +135,8 @@
         "apply_batch": "Batch Apply",
         "select_plugin": "Select Plugin",
         "no_plugins": "No plugins configured",
-        "select_placeholder": "Select a plugin..."
+        "select_placeholder": "Select a plugin...",
+        "list_hint": "Separate values with commas for list fields (array/set)."
     },
     "consumers": {
         "title": "Consumers",

@@ -107,7 +107,13 @@
                 style="padding: 10px; margin-bottom: 20px; border-left: 3px solid var(--primary);">
                 <div class="text-muted small" data-i18n="services.current">Serviço Atual</div>
                 <div class="fw-bold text-truncate" id="currentServiceBadge" style="font-size: 0.85rem;">...</div>
+                <div class="text-muted small text-truncate" id="currentServiceMeta" style="margin-top: 4px;">...</div>
                 <div style="display:flex; gap: 5px; margin-top: 8px;">
+                    <button id="editServiceContextBtn" class="btn btn-sm btn-nav-action"
+                        style="width:auto; padding: 2px 8px; font-size: 0.75rem;" title="Editar serviço"
+                        data-i18n-title="actions.edit">
+                        <i class="ph ph-pencil-simple"></i>
+                    </button>
                     <button id="servicePluginsBtn" class="btn btn-sm btn-nav-action"
                         style="width:auto; padding: 2px 8px; font-size: 0.75rem; flex: 1;" title="Plugins do Serviço"
                         data-i18n-title="services.plugins_title">
@@ -259,6 +265,7 @@
                 <header class="glass-panel toolbar">
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <h2 class="text-white" id="pageTitle" data-i18n="routes.title">Rotas</h2>
+                        <div id="routeStats" class="text-muted small">-</div>
                         <input type="text" id="routeSearch" class="search-input" placeholder="Pesquisar..."
                             data-i18n-placeholder="actions.search">
                     </div>
@@ -284,11 +291,6 @@
                                 class="ph ph-trash"></i></button>
                     </div>
                 </header>
-
-                <!-- Stats -->
-                <div id="statsBar" class="glass-panel" style="padding: 15px 25px;">
-                    <div id="routeStats">-</div>
-                </div>
 
                 <!-- Table -->
                 <div class="glass-panel table-container" style="flex: 1;">

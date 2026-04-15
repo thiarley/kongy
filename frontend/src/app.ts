@@ -8,6 +8,7 @@ import { i18n } from './services/i18n';
 import { UI } from './ui';
 import { store } from './store';
 import { showToast, setBusy } from './utils';
+import type { Service } from './types/kong';
 
 // Import views
 import {
@@ -57,6 +58,9 @@ const VIEWS = {
 
 export class App {
     private ui: UI;
+    private currentService: Service | null = null;
+    private currentView = 'services';
+    private suppressHashChange = false;
 
     constructor() {
         this.ui = new UI(api);
@@ -71,7 +75,7 @@ export class App {
 
         // Check authentication
         if (auth.isAuthenticated()) {
-            await this.loadServicesView();
+            await this.restoreStateFromUrl();
         } else {
             this.switchView('LOADING');
         }
@@ -83,6 +87,12 @@ export class App {
     // ==================== View Switching ====================
 
     switchView(viewName: keyof typeof VIEWS | string) {
+        const normalizedView = String(viewName).toLowerCase();
+        if (normalizedView !== 'loading') {
+            this.currentView = normalizedView;
+            store.setCurrentView(normalizedView);
+        }
+
         // Try direct lookup, then uppercase lookup (for 'services' -> 'SERVICES'), then use as is
         const viewId = VIEWS[viewName as keyof typeof VIEWS] ||
             VIEWS[viewName.toUpperCase() as keyof typeof VIEWS] ||
@@ -105,22 +115,106 @@ export class App {
 
         // Update nav active state
         document.querySelectorAll('.btn-nav').forEach(item => item.classList.remove('active'));
-        const navItem = document.querySelector(`.btn-nav[data-view="${viewName}"]`);
+        const navItem = document.querySelector(`.btn-nav[data-view="${normalizedView}"]`);
         if (navItem) navItem.classList.add('active');
+
+        if (normalizedView !== 'loading' && normalizedView !== 'consumer_details') {
+            this.updateUrlState(normalizedView);
+        }
     }
 
-    updateServiceContext(serviceId: string | null) {
-        const container = document.getElementById('sidebarServiceContext');
-        const badge = document.getElementById('currentServiceBadge');
+    private parseHashRoute() {
+        const hash = window.location.hash.replace(/^#/, '');
+        const [pathPart, queryString = ''] = hash.split('?');
+        const cleanPath = pathPart.replace(/^\//, '') || 'services';
+        const params = new URLSearchParams(queryString);
+        return {
+            view: cleanPath,
+            serviceId: params.get('service')
+        };
+    }
 
+    private buildHash(view: string, serviceId?: string | null) {
+        const params = new URLSearchParams();
         if (serviceId) {
-            api.setServiceId(serviceId);
-            if (container) container.classList.remove('hidden');
-            if (badge) badge.textContent = serviceId; // Ideally fetch name
-        } else {
-            api.setServiceId(null);
-            if (container) container.classList.add('hidden');
+            params.set('service', serviceId);
         }
+        const query = params.toString();
+        return `#/${view}${query ? `?${query}` : ''}`;
+    }
+
+    private updateUrlState(view: string, serviceId: string | null = api.getServiceId()) {
+        const safeView = view === 'routes' && !serviceId ? 'services' : view;
+        const hash = this.buildHash(safeView, safeView === 'routes' ? serviceId : null);
+        if (window.location.hash === hash) return;
+
+        this.suppressHashChange = true;
+        window.location.hash = hash;
+        window.setTimeout(() => {
+            this.suppressHashChange = false;
+        }, 0);
+    }
+
+    async updateServiceContext(service: Service | null, syncUrl = true) {
+        this.currentService = service;
+        api.setServiceId(service?.id || null);
+        this.ui.updateSelectedService(service);
+
+        if (syncUrl) {
+            this.updateUrlState(this.currentView, service?.id || null);
+        }
+    }
+
+    private async ensureServiceLoaded(serviceId: string | null) {
+        if (!serviceId) {
+            await this.updateServiceContext(null, false);
+            return null;
+        }
+
+        if (this.currentService?.id === serviceId) {
+            return this.currentService;
+        }
+
+        const service = await api.getService(serviceId);
+        await this.updateServiceContext(service, false);
+        return service;
+    }
+
+    private async restoreStateFromUrl() {
+        const { view, serviceId } = this.parseHashRoute();
+
+        try {
+            if (serviceId) {
+                await this.ensureServiceLoaded(serviceId);
+            } else {
+                await this.updateServiceContext(null, false);
+            }
+        } catch (e: any) {
+            showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
+            await this.updateServiceContext(null, false);
+        }
+
+        if (view === 'routes' && api.getServiceId()) {
+            await this.refreshRoutes();
+            return;
+        }
+
+        if (view === 'consumers') {
+            await this.loadConsumersView();
+            return;
+        }
+
+        if (view === 'upstreams') {
+            await this.loadUpstreamsView();
+            return;
+        }
+
+        if (view === 'certificates') {
+            await this.loadCertificatesView();
+            return;
+        }
+
+        await this.loadServicesView();
     }
 
     // ==================== View Loaders (Delegating to modules) ====================
@@ -140,6 +234,10 @@ export class App {
     }
 
     async refreshRoutes() {
+        if (!api.getServiceId()) {
+            await this.loadServicesView();
+            return;
+        }
         this.switchView('ROUTES');
         await refreshRoutes();
     }
@@ -254,13 +352,35 @@ export class App {
             store.selectAllRoutes((e.target as HTMLInputElement).checked);
         });
 
+        document.getElementById('closeServiceContextBtn')?.addEventListener('click', async () => {
+            await this.updateServiceContext(null);
+            await this.loadServicesView();
+        });
+
+        document.getElementById('servicePluginsBtn')?.addEventListener('click', () => {
+            if (this.currentService) {
+                this.ui.triggerServicePlugins(this.currentService);
+            }
+        });
+
+        window.addEventListener('hashchange', async () => {
+            if (this.suppressHashChange || !auth.isAuthenticated()) return;
+            await this.restoreStateFromUrl();
+        });
+
         // --- Navigation ---
         document.querySelectorAll('.btn-nav').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const view = (e.currentTarget as HTMLElement).dataset.view;
                 if (view) {
                     if (view === 'services') this.loadServicesView();
-                    else if (view === 'routes') this.refreshRoutes();
+                    else if (view === 'routes') {
+                        if (!api.getServiceId()) {
+                            this.loadServicesView();
+                        } else {
+                            this.refreshRoutes();
+                        }
+                    }
                     else if (view === 'consumers') this.loadConsumersView();
                     else if (view === 'upstreams') this.loadUpstreamsView();
                     else if (view === 'certificates') this.loadCertificatesView();
