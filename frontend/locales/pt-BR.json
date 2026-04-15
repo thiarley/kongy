@@ -166,7 +166,12 @@
     "select_placeholder": "Selecione um plugin...",
     "auth_forbidden": "Plugins de autenticação não permitidos neste contexto",
     "batch_create_success": "Batch: {count} plugins criados.",
-    "list_hint": "Separe os valores por vírgula para campos de lista (array/set)."
+    "list_hint": "Separe os valores por vírgula para campos de lista (array/set).",
+    "copy_from_route": "Copiar de outra Rota",
+    "copy_select_route_title": "Selecionar Rota de Origem",
+    "copy_select_route_placeholder": "Selecione uma rota...",
+    "copy_select_plugins_title": "Selecionar Plugins",
+    "copy_confirm_btn": "Confirmar Cópia"
   },
   "consumers": {
     "title": "Consumers",

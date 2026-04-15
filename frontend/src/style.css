@@ -332,10 +332,18 @@ body {
 }
 
 #pluginSelect option,
-#routePluginSelect option {
-    background-color: #0f172a !important;
+#routePluginSelect option,
+.swal2-select option {
+    background-color: #1e293b !important;
     color: #ffffff !important;
     padding: 10px;
+}
+
+/* Ensure Swal2 select itself matches the theme */
+.swal2-select {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 

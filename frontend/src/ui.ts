@@ -507,13 +507,6 @@ export class UI {
             });
         });
 
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.classList.add('hidden');
-                }
-            });
-        });
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {

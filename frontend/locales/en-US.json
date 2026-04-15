@@ -136,7 +136,12 @@
         "select_plugin": "Select Plugin",
         "no_plugins": "No plugins configured",
         "select_placeholder": "Select a plugin...",
-        "list_hint": "Separate values with commas for list fields (array/set)."
+        "list_hint": "Separate values with commas for list fields (array/set).",
+        "copy_from_route": "Copy from another Route",
+        "copy_select_route_title": "Select Source Route",
+        "copy_select_route_placeholder": "Select a route...",
+        "copy_select_plugins_title": "Select Plugins",
+        "copy_confirm_btn": "Confirm Copy"
     },
     "consumers": {
         "title": "Consumers",

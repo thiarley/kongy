@@ -261,6 +261,137 @@ export async function handleSavePluginConfig(ui: UI) {
     }
 }
 
+export async function handleCopyPlugins(ui: UI) {
+    const modal = document.getElementById('pluginsModal');
+    if (!modal) return;
+
+    const targetType = modal.dataset.entityType as 'route' | 'service';
+    const targetId = modal.dataset.entityId || '';
+
+    if (!targetId || !targetType) return;
+
+    // Get all routes for selection (excluding current if it's a route)
+    const routes = store.state.routes.filter(r => r.source === 'remote' && r.id !== targetId);
+
+    if (routes.length === 0) {
+        return showToast(i18n.t('routes.empty_state'), 'warning');
+    }
+
+    const routeOptions = routes.reduce((acc: any, r) => {
+        acc[r.id] = r.name || r.id;
+        return acc;
+    }, {});
+
+    // Step 1: Select Source Route
+    // @ts-ignore - Swal is global
+    const { value: sourceId } = await Swal.fire({
+        title: i18n.t('plugins.copy_select_route_title'),
+        input: 'select',
+        inputOptions: routeOptions,
+        inputPlaceholder: i18n.t('plugins.copy_select_route_placeholder'),
+        showCancelButton: true,
+        confirmButtonText: i18n.t('actions.confirm'),
+        cancelButtonText: i18n.t('actions.cancel'),
+        confirmButtonColor: '#6366f1',
+        cancelButtonColor: '#64748b',
+        background: '#1e293b',
+        color: '#f8fafc',
+        width: '500px',
+        customClass: {
+            popup: 'glass-panel',
+            input: 'form-control'
+        }
+    });
+
+    if (!sourceId) return;
+
+    // Step 2: Fetch plugins from source route
+    try {
+        // We use a small loading overlay instead of setBusy on the whole modal
+        const pluginsListEl = document.getElementById('pluginsList');
+        setBusy(pluginsListEl, true);
+
+        const { data: sourcePlugins } = await api.getPlugins(sourceId);
+        setBusy(pluginsListEl, false);
+
+        if (!sourcePlugins || sourcePlugins.length === 0) {
+            return showToast(i18n.t('plugins.no_plugins'), 'info');
+        }
+
+        // Step 3: Select which plugins to copy
+        const pluginListHtml = sourcePlugins.map((p: any) => `
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px; margin-bottom: 8px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: left;">
+                <input type="checkbox" name="plugin_to_copy" value="${p.id}" id="chk_${p.id}" checked 
+                       style="width: 20px; height: 20px; cursor: pointer; accent-color: #6366f1;">
+                <label for="chk_${p.id}" style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; margin: 0;">
+                    <span style="font-size: 1.2rem;">${getPluginIcon(p.name)}</span>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-weight: 500;">${p.name}</span>
+                        <span style="font-size: 0.75rem; color: #94a3b8;">${p.id.substring(0, 8)}...</span>
+                    </div>
+                </label>
+            </div>
+        `).join('');
+
+        // @ts-ignore
+        const { value: selectedIds } = await Swal.fire({
+            title: i18n.t('plugins.copy_select_plugins_title'),
+            html: `
+                <div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                    ${pluginListHtml}
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: i18n.t('plugins.copy_confirm_btn'),
+            cancelButtonText: i18n.t('actions.cancel'),
+            confirmButtonColor: '#6366f1',
+            cancelButtonColor: '#64748b',
+            background: '#1e293b',
+            color: '#f8fafc',
+            width: '500px',
+            customClass: {
+                popup: 'glass-panel'
+            },
+            preConfirm: () => {
+                const checked = document.querySelectorAll('input[name="plugin_to_copy"]:checked');
+                return Array.from(checked).map((c: any) => c.value);
+            }
+        });
+
+        if (selectedIds && selectedIds.length > 0) {
+            const footer = modal.querySelector('.modal-footer') as HTMLElement;
+            setBusy(footer, true);
+            
+            try {
+                const result = await api.copyPlugins(targetType, targetId, 'route', sourceId, selectedIds);
+                if (result.success) {
+                    showToast(i18n.t('messages.batch_success', { count: result.count }), 'success');
+                    if (result.errors && result.errors.length > 0) {
+                        showToast(`${result.errors.length} falhas registradas`, 'warning');
+                    }
+                    
+                    // Refresh current view
+                    if (targetType === 'route') {
+                        refreshRoutes();
+                        const r = store.state.routes.find(x => x.id === targetId);
+                        if (r) loadRoutePlugins(ui, r);
+                    } else {
+                        loadServicePlugins(ui, { id: targetId });
+                    }
+                }
+            } catch (e: any) {
+                showToast(e.message, 'error');
+            } finally {
+                setBusy(footer, false);
+            }
+        }
+    } catch (e: any) {
+        showToast(e.message, 'error');
+        const pluginsListEl = document.getElementById('pluginsList');
+        setBusy(pluginsListEl, false);
+    }
+}
+
 export function bindPluginCallbacks(ui: UI) {
     // Route plugins
     ui.triggerPlugins = async (route: any) => {
@@ -285,4 +416,10 @@ export function bindPluginCallbacks(ui: UI) {
         populatePluginSelect();
         loadServicePlugins(ui, svc);
     };
+
+    // Copy plugins binding
+    const copyBtn = document.getElementById('copyPluginsFromRouteBtn');
+    if (copyBtn) {
+        copyBtn.onclick = () => handleCopyPlugins(ui);
+    }
 }

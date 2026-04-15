@@ -439,6 +439,16 @@ class API {
     async deleteConsumerCredential(consumerId: string, plugin: string, credentialId: string) {
         return this.fetchKong(METHODS.DELETE, `/consumers/${consumerId}/${plugin}/${credentialId}`);
     }
+
+    // ==================== Copy Orchestration ====================
+
+    async copyPlugins(targetType: 'route' | 'service', targetId: string, sourceType: 'route' | 'service', sourceId: string, pluginIds?: string[]) {
+        return this.fetchApi(METHODS.POST, '/kong/copy-plugins', {
+            source: { type: sourceType, id: sourceId },
+            target: { type: targetType, id: targetId },
+            plugin_ids: pluginIds
+        });
+    }
 }
 
 export const api = new API();
