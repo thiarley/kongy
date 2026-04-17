@@ -61,6 +61,30 @@ export async function loadConsumerDetails(ui: UI, consumer: any, callbacks: Cons
     loadConsumerAcls(consumer.id);
     loadConsumerCredentials(consumer.id, 'basic-auth', ui);
     loadConsumerPlugins(consumer.id);
+
+    // Handle Save Details
+    const updateBtn = document.getElementById('updateConsumerBtn');
+    if (updateBtn) {
+        updateBtn.onclick = async () => {
+            const username = (document.getElementById('edit_consumer_username') as HTMLInputElement).value;
+            const custom_id = (document.getElementById('edit_consumer_custom_id') as HTMLInputElement).value;
+            const tagsRaw = (document.getElementById('edit_consumer_tags') as HTMLInputElement).value;
+            const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()) : [];
+
+            try {
+                const updated = await api.updateConsumer(consumer.id, {
+                    username: username || undefined,
+                    custom_id: custom_id || undefined,
+                    tags
+                });
+                currentConsumer = updated;
+                if (nameEl) nameEl.textContent = updated.username || updated.id;
+                showToast(i18n.t('consumers.update_success'), 'success');
+            } catch (e: any) {
+                showToast(e.message, 'error');
+            }
+        };
+    }
 }
 
 export async function loadConsumerAcls(consumerId: string) {

@@ -41,13 +41,30 @@ export function handleAddService(ui: UI, callbacks: ServicesViewCallbacks) {
     btn.onclick = async () => {
         const name = (document.getElementById('svc_name') as HTMLInputElement).value;
         const host = (document.getElementById('svc_host') as HTMLInputElement).value;
+        const protocol = (document.getElementById('svc_protocol') as HTMLSelectElement).value;
+        const port = parseInt((document.getElementById('svc_port') as HTMLInputElement).value);
+        const path = (document.getElementById('svc_path') as HTMLInputElement).value;
+        const retries = parseInt((document.getElementById('svc_retries') as HTMLInputElement).value);
+        const connect_timeout = parseInt((document.getElementById('svc_connect_timeout') as HTMLInputElement).value);
+        const write_timeout = parseInt((document.getElementById('svc_write_timeout') as HTMLInputElement).value);
+        const read_timeout = parseInt((document.getElementById('svc_read_timeout') as HTMLInputElement).value);
+        const tagsRaw = (document.getElementById('svc_tags') as HTMLInputElement).value;
+        const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()) : [];
 
         if (!name || !host) {
             return showToast(i18n.t('errors.name_host_required'), 'warning');
         }
 
         try {
-            await api.createService({ name, host, protocol: 'http', port: 80 });
+            await api.createService({
+                name, host, protocol: protocol as any, port,
+                path: path || undefined,
+                retries: isNaN(retries) ? undefined : retries,
+                connect_timeout: isNaN(connect_timeout) ? undefined : connect_timeout,
+                write_timeout: isNaN(write_timeout) ? undefined : write_timeout,
+                read_timeout: isNaN(read_timeout) ? undefined : read_timeout,
+                tags
+            });
             ui.closeModal('serviceModal');
             loadServicesView(ui, callbacks);
             showToast(i18n.t('services.create_success'), 'success');
@@ -77,15 +94,40 @@ export function bindServiceCallbacks(
         ui.openModal('serviceModal');
         (document.getElementById('svc_name') as HTMLInputElement).value = svc.name || '';
         (document.getElementById('svc_host') as HTMLInputElement).value = svc.host || '';
+        (document.getElementById('svc_protocol') as HTMLSelectElement).value = svc.protocol || 'http';
+        (document.getElementById('svc_port') as HTMLInputElement).value = svc.port || '80';
+        (document.getElementById('svc_path') as HTMLInputElement).value = svc.path || '';
+        (document.getElementById('svc_retries') as HTMLInputElement).value = svc.retries ?? '5';
+        (document.getElementById('svc_connect_timeout') as HTMLInputElement).value = svc.connect_timeout ?? '60000';
+        (document.getElementById('svc_write_timeout') as HTMLInputElement).value = svc.write_timeout ?? '60000';
+        (document.getElementById('svc_read_timeout') as HTMLInputElement).value = svc.read_timeout ?? '60000';
+        (document.getElementById('svc_tags') as HTMLInputElement).value = (svc.tags || []).join(', ');
 
         const btn = document.getElementById('saveServiceBtn');
         if (btn) {
             btn.onclick = async () => {
                 const name = (document.getElementById('svc_name') as HTMLInputElement).value;
                 const host = (document.getElementById('svc_host') as HTMLInputElement).value;
+                const protocol = (document.getElementById('svc_protocol') as HTMLSelectElement).value;
+                const port = parseInt((document.getElementById('svc_port') as HTMLInputElement).value);
+                const path = (document.getElementById('svc_path') as HTMLInputElement).value;
+                const retries = parseInt((document.getElementById('svc_retries') as HTMLInputElement).value);
+                const connect_timeout = parseInt((document.getElementById('svc_connect_timeout') as HTMLInputElement).value);
+                const write_timeout = parseInt((document.getElementById('svc_write_timeout') as HTMLInputElement).value);
+                const read_timeout = parseInt((document.getElementById('svc_read_timeout') as HTMLInputElement).value);
+                const tagsRaw = (document.getElementById('svc_tags') as HTMLInputElement).value;
+                const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()) : [];
 
                 try {
-                    await api.updateService(svc.id, { name, host });
+                    await api.updateService(svc.id, {
+                        name, host, protocol: protocol as any, port,
+                        path: path || undefined,
+                        retries: isNaN(retries) ? undefined : retries,
+                        connect_timeout: isNaN(connect_timeout) ? undefined : connect_timeout,
+                        write_timeout: isNaN(write_timeout) ? undefined : write_timeout,
+                        read_timeout: isNaN(read_timeout) ? undefined : read_timeout,
+                        tags
+                    });
                     ui.closeModal('serviceModal');
                     loadServicesView(ui, callbacks);
                     showToast(i18n.t('services.update_success'), 'success');

@@ -114,11 +114,19 @@ export function handleAddUpstream(ui: UI, callbacks: UpstreamsViewCallbacks) {
         btn.onclick = async () => {
             const name = (document.getElementById('upstream_name') as HTMLInputElement).value;
             const slots = (document.getElementById('upstream_slots') as HTMLInputElement).value;
+            const algorithm = (document.getElementById('upstream_algorithm') as HTMLInputElement).value;
+            const tagsRaw = (document.getElementById('upstream_tags') as HTMLInputElement).value;
+            const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()) : [];
 
             if (!name) return showToast(i18n.t('errors.required'), 'warning');
 
             try {
-                await api.createUpstream({ name, slots: parseInt(slots) || 1000 });
+                await api.createUpstream({
+                    name,
+                    slots: parseInt(slots) || 10000,
+                    algorithm: algorithm || 'round-robin',
+                    tags
+                });
                 ui.closeModal('upstreamModal');
                 loadUpstreamsView(ui, callbacks);
                 showToast(i18n.t('upstreams.create_success'), 'success');

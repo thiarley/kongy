@@ -670,12 +670,27 @@ export class UI {
     }
 
     clearServiceForm() {
-        const nameInput = document.getElementById('svc_name') as HTMLInputElement;
-        const hostInput = document.getElementById('svc_host') as HTMLInputElement;
-        const title = document.getElementById('serviceModalTitle');
+        const fields = [
+            'svc_name', 'svc_host', 'svc_port', 'svc_path',
+            'svc_retries', 'svc_connect_timeout', 'svc_write_timeout',
+            'svc_read_timeout', 'svc_tags'
+        ];
 
-        if (nameInput) nameInput.value = '';
-        if (hostInput) hostInput.value = '';
+        fields.forEach(id => {
+            const el = document.getElementById(id) as HTMLInputElement;
+            if (el) {
+                // Set defaults for some fields
+                if (id === 'svc_port') el.value = '80';
+                else if (id === 'svc_retries') el.value = '5';
+                else if (id.includes('timeout')) el.value = '60000';
+                else el.value = '';
+            }
+        });
+
+        const protocol = document.getElementById('svc_protocol') as HTMLSelectElement;
+        if (protocol) protocol.value = 'http';
+
+        const title = document.getElementById('serviceModalTitle');
         if (title) {
             title.innerHTML = `<span data-i18n="actions.new">Novo</span> <span data-i18n="services.entity">Serviço</span>`;
         }
