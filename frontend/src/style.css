@@ -92,6 +92,15 @@ body {
     text-overflow: ellipsis;
 }
 
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.route-path.cursor-pointer:hover {
+    text-decoration: underline dotted;
+    color: var(--primary);
+}
+
 .font-monospace {
     font-family: 'JetBrains Mono', monospace;
 }

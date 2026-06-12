@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     
     # Security - Rate Limiting
     CORS_ORIGINS: List[str] = ["http://localhost:8080", "http://localhost:3000"]
-    RATE_LIMIT_REQUESTS: int = 100
+    RATE_LIMIT_REQUESTS: int = 10000
     RATE_LIMIT_WINDOW: int = 60  # seconds
     LOGIN_RATE_LIMIT: int = 5
     LOGIN_RATE_WINDOW: int = 300  # 5 minutes lockout after failed attempts

@@ -10,6 +10,7 @@ services:
   # Frontend (Nginx serving static files)
   # ============================================
   frontend:
+    image: ${REGISTRY:+${REGISTRY}/}${IMAGE_PREFIX:-kongy-}frontend:${VERSION:-latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -38,6 +39,7 @@ services:
   # Backend (FastAPI)
   # ============================================
   backend:
+    image: ${REGISTRY:+${REGISTRY}/}${IMAGE_PREFIX:-kongy-}backend:${VERSION:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile

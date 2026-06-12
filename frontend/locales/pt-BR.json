@@ -145,7 +145,8 @@
     "source": "Fonte",
     "endpoint_methods": "Endpoint / Métodos",
     "tags_plugins": "Tags / Plugins",
-    "with_plugins": "com plugins"
+    "with_plugins": "com plugins",
+    "paths_modal_title": "Caminhos da Rota"
   },
   "plugins": {
     "title": "Plugins",
@@ -215,7 +216,7 @@
     "health": "Saúde",
     "add_target_success": "Target adicionado",
     "delete_target_confirm": "Deletar target?",
-    "empty_state": "Nenhum upstream econtrado",
+    "empty_state": "Nenhum upstream encontrado",
     "targets_empty": "Nenhum target encontrado"
   },
   "certificates": {

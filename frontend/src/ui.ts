@@ -205,7 +205,7 @@ export class UI {
                     <div class="route-methods mb-1">
                         ${this.renderMethodBadges(raw.methods || [])}
                     </div>
-                    <div class="route-path text-truncate" style="max-width: 250px;" title="${escapeHtml(paths)}">${escapeHtml(paths)}</div>
+                    <div class="route-path text-truncate cursor-pointer" style="max-width: 250px;" title="${escapeHtml(paths)}">${escapeHtml(paths)}</div>
                 </td>
                 <td class="text-center">
                     <span class="option-indicator ${raw.preserve_host ? 'active' : ''}" title="${i18n.t('routes.preserve_host')}">
@@ -256,6 +256,46 @@ export class UI {
                     navigator.clipboard.writeText(JSON.stringify(raw, null, 2));
                     import('./utils').then(({ showToast }) => showToast(i18n.t('messages.copied'), 'success'));
                 };
+                const pathEl = tr.querySelector('.route-path') as HTMLElement;
+                if (pathEl) {
+                    pathEl.onclick = (e) => {
+                        e.stopPropagation();
+                        const pathList = raw.paths || [];
+                        if (pathList.length === 0) return;
+                        
+                        // @ts-ignore
+                        Swal.fire({
+                            title: i18n.t('routes.paths_modal_title') || 'Caminhos da Rota',
+                            html: `
+                                <div style="text-align: left; max-height: 300px; overflow-y: auto;">
+                                    ${pathList.map((p: string) => `
+                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; margin-bottom: 6px; background: rgba(255,255,255,0.05); border-radius: 6px; font-family: monospace;">
+                                            <span style="word-break: break-all; color: #38bdf8;">${escapeHtml(p)}</span>
+                                            <button class="btn-icon path-copy-btn" data-path="${escapeHtml(p)}" style="padding: 4px;" title="${i18n.t('actions.copy_json') || 'Copiar'}">
+                                                <i class="ph ph-copy" style="font-size: 1.1rem;"></i>
+                                            </button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `,
+                            showConfirmButton: false,
+                            showCloseButton: true,
+                            background: '#1e293b',
+                            color: '#f8fafc',
+                            customClass: {
+                                popup: 'glass-panel'
+                            },
+                            didOpen: (popup: any) => {
+                                popup.querySelectorAll('.path-copy-btn').forEach((btn: any) => {
+                                    btn.onclick = () => {
+                                        navigator.clipboard.writeText(btn.dataset.path || '');
+                                        import('./utils').then(({ showToast }) => showToast(i18n.t('messages.copied'), 'success'));
+                                    };
+                                });
+                            }
+                        });
+                    };
+                }
 
                 return tr;
                 },

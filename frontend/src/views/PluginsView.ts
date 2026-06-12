@@ -135,10 +135,10 @@ export function openPluginConfigModal(ui: UI, plugin: any | null, schema: any, p
         modal.dataset.pluginId = plugin?.id || '';
 
         const parentModal = document.getElementById('pluginsModal');
-        if (!plugin && parentModal) {
-            modal.dataset.entityType = parentModal.dataset.entityType;
-            modal.dataset.entityId = parentModal.dataset.entityId;
-            modal.dataset.mode = parentModal.dataset.mode;
+        if (parentModal) {
+            modal.dataset.entityType = parentModal.dataset.entityType || '';
+            modal.dataset.entityId = parentModal.dataset.entityId || '';
+            modal.dataset.mode = parentModal.dataset.mode || '';
         }
     }
 }
@@ -234,11 +234,9 @@ export async function handleSavePluginConfig(ui: UI) {
             ui.closeModal('pluginConfigModal');
 
             if (entityType === 'route') {
-                refreshRoutes();
-                setTimeout(() => {
-                    const r = store.state.routes.find(x => x.id === entityId);
-                    if (r) loadRoutePlugins(ui, r);
-                }, 500);
+                await refreshRoutes();
+                const r = store.state.routes.find(x => x.id === entityId);
+                if (r) loadRoutePlugins(ui, r);
             } else if (entityType === 'service') {
                 loadServicePlugins(ui, { id: entityId });
             } else if (entityType === 'consumer') {
@@ -254,7 +252,16 @@ export async function handleSavePluginConfig(ui: UI) {
             await api.updatePlugin(pluginId, { config });
             showToast(i18n.t('plugins.update_success'), 'success');
             ui.closeModal('pluginConfigModal');
-            refreshRoutes();
+            
+            if (entityType === 'route') {
+                await refreshRoutes();
+                const r = store.state.routes.find(x => x.id === entityId);
+                if (r) loadRoutePlugins(ui, r);
+            } else if (entityType === 'service') {
+                loadServicePlugins(ui, { id: entityId });
+            } else if (entityType === 'consumer') {
+                import('./ConsumersView').then(m => m.loadConsumerPlugins(entityId));
+            }
         } catch (e: any) {
             showToast(e.message, 'error');
         }

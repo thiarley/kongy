@@ -66,7 +66,7 @@ export function handleAddService(ui: UI, callbacks: ServicesViewCallbacks) {
                 tags
             });
             ui.closeModal('serviceModal');
-            loadServicesView(ui, callbacks);
+            await loadServicesView(ui, callbacks);
             showToast(i18n.t('services.create_success'), 'success');
         } catch (e: any) {
             showToast(e.message, 'error');
@@ -129,7 +129,7 @@ export function bindServiceCallbacks(
                         tags
                     });
                     ui.closeModal('serviceModal');
-                    loadServicesView(ui, callbacks);
+                    await loadServicesView(ui, callbacks);
                     showToast(i18n.t('services.update_success'), 'success');
                 } catch (e: any) {
                     showToast(e.message, 'error');
@@ -154,7 +154,7 @@ export function bindServiceCallbacks(
         if (result.isConfirmed) {
             try {
                 await api.deleteService(svc.id);
-                loadServicesView(ui, callbacks);
+                await loadServicesView(ui, callbacks);
                 showToast(i18n.t('services.delete_success'), 'success');
             } catch (e: any) {
                 showToast(e.message, 'error');

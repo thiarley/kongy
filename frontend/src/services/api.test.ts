@@ -42,6 +42,8 @@ describe('API', () => {
             (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 status: 200,
+                headers: { get: () => 'application/json' },
+                text: () => Promise.resolve(JSON.stringify({ data: [] })),
                 json: () => Promise.resolve({ data: [] })
             });
 
@@ -59,6 +61,8 @@ describe('API', () => {
             (global.fetch as any).mockResolvedValueOnce({
                 ok: false,
                 status: 401,
+                headers: { get: () => 'application/json' },
+                text: () => Promise.resolve(JSON.stringify({ detail: 'Unauthorized' })),
                 json: () => Promise.resolve({ detail: 'Unauthorized' })
             });
 
@@ -76,6 +80,8 @@ describe('API', () => {
             (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 status: 200,
+                headers: { get: () => 'application/json' },
+                text: () => Promise.resolve(JSON.stringify({ data: [] })),
                 json: () => Promise.resolve({ data: [] })
             });
 

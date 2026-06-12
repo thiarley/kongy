@@ -107,12 +107,17 @@ async function showImportPreview(routesList: any[], currentServiceId: string) {
     });
 }
 
-export async function refreshRoutes() {
+export async function refreshRoutes(excludeIds?: Set<string>) {
     try {
         store.setLoading(true);
         const serviceId = api.getServiceId();
         const data = serviceId ? await api.getServiceRoutes(serviceId) : await api.getRoutes();
-        const routes = data.data || [];
+        let routes = data.data || [];
+        
+        if (excludeIds && excludeIds.size > 0) {
+            routes = routes.filter((r: any) => !excludeIds.has(r.id));
+        }
+        
         store.setRoutes(routes);
 
         // Load all plugins in a few paginated requests, then keep only those for visible routes.
@@ -145,7 +150,7 @@ export function handleAddRoute(ui: UI) {
             try {
                 await api.saveRoute(data);
                 ui.closeModal('editModal');
-                refreshRoutes();
+                await refreshRoutes();
                 showToast(i18n.t('routes.create_success'), 'success');
             } catch (e: any) {
                 showToast(e.message, 'error');
@@ -380,7 +385,7 @@ export function handleBatchEdit(ui: UI) {
                 }));
 
                 ui.closeModal('editModal');
-                refreshRoutes();
+                await refreshRoutes();
 
                 if (errorCount === 0) {
                     showToast(i18n.t('messages.batch_success', { count: successCount }), 'success');
@@ -411,7 +416,7 @@ export function bindRouteCallbacks(ui: UI) {
                 try {
                     await api.updateRoute(route.id, data);
                     ui.closeModal('editModal');
-                    refreshRoutes();
+                    await refreshRoutes();
                     showToast(i18n.t('routes.update_success'), 'success');
                 } catch (e: any) {
                     showToast(e.message, 'error');
@@ -426,7 +431,7 @@ export function bindRouteCallbacks(ui: UI) {
             try {
                 await api.deleteRoute(route.id);
                 store.removeRoute(route.id);
-                refreshRoutes();
+                await refreshRoutes(new Set([route.id]));
                 showToast(i18n.t('routes.delete_success'), 'success');
             } catch (e: any) {
                 showToast(e.message, 'error');
@@ -443,17 +448,19 @@ export async function handleBatchDelete(ui: UI) {
         setBusy(document.getElementById('routesTable'), true);
         let success = 0;
         let errors = 0;
+        const deletedIds = new Set<string>();
 
         for (const id of ids) {
             try {
                 await api.deleteRoute(id);
+                deletedIds.add(id);
                 success++;
             } catch (e) {
                 errors++;
             }
         }
 
-        refreshRoutes();
+        await refreshRoutes(deletedIds);
         setBusy(document.getElementById('routesTable'), false);
 
         if (errors === 0) {
