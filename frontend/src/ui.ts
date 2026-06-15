@@ -7,7 +7,9 @@ import {
     parseCommaSeparated,
     joinWithComma,
     $,
-    renderIncrementally
+    renderIncrementally,
+    clearFieldErrors,
+    showToast
 } from './utils';
 import { Route, Consumer, Plugin, Service } from './types/kong';
 import { i18n } from './services/i18n';
@@ -75,9 +77,12 @@ export class UI {
     }
 
     render(state: any) {
-        this.renderRoutes(store.filteredRoutes, state.selectedRoutes);
-        this.renderStats();
-        this.updateToolbar(state);
+        if (state.currentView === 'routes') {
+            this.renderRoutes(store.filteredRoutes, state.selectedRoutes);
+            this.renderStats();
+            this.updateToolbar(state);
+            this.updateSortIndicators();
+        }
     }
 
     renderServices(services: any[], currentId: string) {
@@ -162,7 +167,7 @@ export class UI {
             if (routes.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="text-center text-muted p-4">
+                        <td colspan="9" class="text-center text-muted p-4">
                             <i class="ph ph-path" style="font-size: 2rem; opacity: 0.5;"></i>
                             <p>${i18n.t('routes.empty_state')}</p>
                         </td>
@@ -192,6 +197,7 @@ export class UI {
 
                 const routePlugins = store.getRoutePlugins(route.id);
                 const pluginIcons = this.renderPluginIndicators(routePlugins);
+                const created = formatDate(raw.created_at || route.created_at);
 
                 tr.innerHTML = `
                 <td>
@@ -227,6 +233,7 @@ export class UI {
                     ${pluginIcons}
                 </td>
                 <td>${sourceBadge}</td>
+                <td>${created}</td>
                 <td>
                     <div class="action-group">
                         <button class="btn-icon action-edit" title="${i18n.t('actions.edit')}">
@@ -254,7 +261,7 @@ export class UI {
                 (tr.querySelector('.action-del') as HTMLElement).onclick = () => this.triggerDelete(route);
                 (tr.querySelector('.action-copy') as HTMLElement).onclick = () => {
                     navigator.clipboard.writeText(JSON.stringify(raw, null, 2));
-                    import('./utils').then(({ showToast }) => showToast(i18n.t('messages.copied'), 'success'));
+                    showToast(i18n.t('messages.copied'), 'success');
                 };
                 const pathEl = tr.querySelector('.route-path') as HTMLElement;
                 if (pathEl) {
@@ -289,7 +296,7 @@ export class UI {
                                 popup.querySelectorAll('.path-copy-btn').forEach((btn: any) => {
                                     btn.onclick = () => {
                                         navigator.clipboard.writeText(btn.dataset.path || '');
-                                        import('./utils').then(({ showToast }) => showToast(i18n.t('messages.copied'), 'success'));
+                                        showToast(i18n.t('messages.copied'), 'success');
                                     };
                                 });
                             }
@@ -464,6 +471,25 @@ export class UI {
         }
     }
 
+    updateSortIndicators() {
+        const headers = document.querySelectorAll('#routesTable th.sortable');
+        headers.forEach(th => {
+            const sortKey = th.getAttribute('data-sort');
+            const indicator = th.querySelector('.sort-indicator');
+            if (indicator) {
+                if (sortKey === store.sortKey) {
+                    indicator.innerHTML = store.sortOrder === 'asc'
+                        ? ' <i class="ph ph-caret-up"></i>'
+                        : ' <i class="ph ph-caret-down"></i>';
+                    th.classList.add('sorted');
+                } else {
+                    indicator.innerHTML = '';
+                    th.classList.remove('sorted');
+                }
+            }
+        });
+    }
+
     openModal(id: string) {
         const el = document.getElementById(id);
         if (el) {
@@ -477,6 +503,7 @@ export class UI {
         const el = document.getElementById(id);
         if (el) {
             el.classList.add('hidden');
+            clearFieldErrors(el);
             if (id === 'editModal') {
                 el.classList.remove('mode-batch');
                 const btn = document.getElementById('saveRouteBtn') as HTMLElement;
@@ -491,13 +518,67 @@ export class UI {
             if (id === 'serviceModal') {
                 this.clearServiceForm();
             }
+            if (id === 'pluginsModal') {
+                el.dataset.entityType = '';
+                el.dataset.entityId = '';
+                el.dataset.mode = '';
+                el.dataset.pluginId = '';
+                const list = document.getElementById('pluginsList');
+                if (list) {
+                    list.style.display = '';
+                    list.innerHTML = `<div class="text-muted text-center p-4">${i18n.t('messages.loading')}</div>`;
+                }
+                const select = document.getElementById('pluginSelect') as HTMLSelectElement | null;
+                if (select) select.value = '';
+            }
+            if (id === 'pluginConfigModal') {
+                el.dataset.pluginName = '';
+                el.dataset.pluginId = '';
+                el.dataset.entityType = '';
+                el.dataset.entityId = '';
+                el.dataset.mode = '';
+                const form = document.getElementById('pluginConfigForm');
+                if (form) form.innerHTML = '';
+            }
+            if (id === 'consumerModal') {
+                ['consumer_username', 'consumer_custom_id', 'consumer_tags'].forEach(fieldId => {
+                    const input = document.getElementById(fieldId) as HTMLInputElement | null;
+                    if (input) input.value = '';
+                });
+            }
+            if (id === 'aclModal') {
+                delete el.dataset.aclId;
+                const input = document.getElementById('acl_group') as HTMLInputElement | null;
+                if (input) input.value = '';
+            }
+            if (id === 'credentialModal') {
+                delete el.dataset.credId;
+                delete el.dataset.mode;
+                const fields = document.getElementById('credentialFields');
+                if (fields) fields.innerHTML = '';
+            }
+            if (id === 'upstreamModal') {
+                ['upstream_id', 'upstream_name', 'upstream_tags'].forEach(fieldId => {
+                    const input = document.getElementById(fieldId) as HTMLInputElement | null;
+                    if (input) input.value = '';
+                });
+                const algorithm = document.getElementById('upstream_algorithm') as HTMLSelectElement | null;
+                const slots = document.getElementById('upstream_slots') as HTMLInputElement | null;
+                if (algorithm) algorithm.value = 'round-robin';
+                if (slots) slots.value = '10000';
+            }
+            if (id === 'certificateModal') {
+                ['certificate_id', 'certificate_cert', 'certificate_key', 'certificate_snis', 'certificate_tags'].forEach(fieldId => {
+                    const input = document.getElementById(fieldId) as HTMLInputElement | HTMLTextAreaElement | null;
+                    if (input) input.value = '';
+                });
+            }
         }
     }
 
     closeAllModals() {
         document.querySelectorAll('.modal').forEach(m => {
-            m.classList.add('hidden');
-            m.classList.remove('mode-batch');
+            this.closeModal((m as HTMLElement).id);
         });
 
         const nameInput = document.getElementById('input_name') as HTMLInputElement;

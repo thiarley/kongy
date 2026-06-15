@@ -7,7 +7,7 @@ import { api } from './services/api';
 import { i18n } from './services/i18n';
 import { UI } from './ui';
 import { store } from './store';
-import { showToast, setBusy } from './utils';
+import { runAction, showToast, validateRequiredFields } from './utils';
 import type { Service } from './types/kong';
 
 // Import views
@@ -283,13 +283,13 @@ export class App {
         document.getElementById('addServiceBtn')?.addEventListener('click', () => {
             handleAddService(this.ui, serviceCallbacks);
         });
-        document.getElementById('refreshServicesBtn')?.addEventListener('click', () => {
-            this.loadServicesView();
+        document.getElementById('refreshServicesBtn')?.addEventListener('click', (event) => {
+            runAction(() => this.loadServicesView(), { button: event.currentTarget as HTMLElement });
         });
 
         // --- Route Actions ---
-        document.getElementById('refreshRoutesBtn')?.addEventListener('click', () => {
-            this.refreshRoutes();
+        document.getElementById('refreshRoutesBtn')?.addEventListener('click', (event) => {
+            runAction(() => this.refreshRoutes(), { button: event.currentTarget as HTMLElement });
         });
         document.getElementById('addRouteBtn')?.addEventListener('click', () => {
             handleAddRoute(this.ui);
@@ -316,25 +316,35 @@ export class App {
             handleBatchDelete(this.ui);
         });
 
+        // --- Route Table Sorting ---
+        document.querySelectorAll('#routesTable th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.getAttribute('data-sort');
+                if (key) {
+                    store.setSort(key);
+                }
+            });
+        });
+
         // --- Consumer Actions ---
-        document.getElementById('refreshConsumersBtn')?.addEventListener('click', () => {
-            this.loadConsumersView();
+        document.getElementById('refreshConsumersBtn')?.addEventListener('click', (event) => {
+            runAction(() => this.loadConsumersView(), { button: event.currentTarget as HTMLElement });
         });
         document.getElementById('addConsumerBtn')?.addEventListener('click', () => {
             handleAddConsumer(this.ui, viewCallbacks);
         });
 
         // --- Upstream Actions ---
-        document.getElementById('refreshUpstreamsBtn')?.addEventListener('click', () => {
-            this.loadUpstreamsView();
+        document.getElementById('refreshUpstreamsBtn')?.addEventListener('click', (event) => {
+            runAction(() => this.loadUpstreamsView(), { button: event.currentTarget as HTMLElement });
         });
         document.getElementById('addUpstreamBtn')?.addEventListener('click', () => {
             handleAddUpstream(this.ui, viewCallbacks);
         });
 
         // --- Certificate Actions ---
-        document.getElementById('refreshCertificatesBtn')?.addEventListener('click', () => {
-            this.loadCertificatesView();
+        document.getElementById('refreshCertificatesBtn')?.addEventListener('click', (event) => {
+            runAction(() => this.loadCertificatesView(), { button: event.currentTarget as HTMLElement });
         });
         document.getElementById('addCertificateBtn')?.addEventListener('click', () => {
             handleAddCertificate(this.ui, viewCallbacks);
@@ -373,19 +383,21 @@ export class App {
             btn.addEventListener('click', (e) => {
                 const view = (e.currentTarget as HTMLElement).dataset.view;
                 if (view) {
-                    if (view === 'services') this.loadServicesView();
-                    else if (view === 'routes') {
-                        if (!api.getServiceId()) {
-                            this.loadServicesView();
-                        } else {
-                            this.refreshRoutes();
+                    runAction(async () => {
+                        if (view === 'services') await this.loadServicesView();
+                        else if (view === 'routes') {
+                            if (!api.getServiceId()) {
+                                await this.loadServicesView();
+                            } else {
+                                await this.refreshRoutes();
+                            }
                         }
-                    }
-                    else if (view === 'consumers') this.loadConsumersView();
-                    else if (view === 'upstreams') this.loadUpstreamsView();
-                    else if (view === 'certificates') this.loadCertificatesView();
-                    else if (view === 'dashboard') this.loadDashboard();
-                    else this.switchView(view);
+                        else if (view === 'consumers') await this.loadConsumersView();
+                        else if (view === 'upstreams') await this.loadUpstreamsView();
+                        else if (view === 'certificates') await this.loadCertificatesView();
+                        else if (view === 'dashboard') await this.loadDashboard();
+                        else this.switchView(view);
+                    }, { button: e.currentTarget as HTMLElement });
                 }
             });
         });
@@ -403,13 +415,11 @@ export class App {
         // --- Consumer Triggers ---
         this.ui.triggerConsumerDelete = async (consumer: any) => {
             if (await confirmAction(i18n.t('consumers.delete_confirm', { name: consumer.username || consumer.id }))) {
-                try {
+                await runAction(async () => {
                     await api.deleteConsumer(consumer.id);
-                    this.loadConsumersView();
+                    await this.loadConsumersView();
                     showToast(i18n.t('consumers.delete_success'), 'success');
-                } catch (e: any) {
-                    showToast(e.message, 'error');
-                }
+                });
             }
         };
 
@@ -422,17 +432,21 @@ export class App {
             this.ui.openModal('aclModal');
         });
 
-        document.getElementById('saveAclBtn')?.addEventListener('click', async () => {
+        document.getElementById('saveAclBtn')?.addEventListener('click', async (event) => {
             const consumer = getCurrentConsumer();
             if (!consumer) return;
 
+            const button = event.currentTarget as HTMLElement;
             const modal = document.getElementById('aclModal');
             const group = (document.getElementById('acl_group') as HTMLInputElement)?.value;
-            if (!group) return showToast(i18n.t('errors.group_required'), 'warning');
+            if (!group) {
+                validateRequiredFields([{ id: 'acl_group', message: i18n.t('errors.group_required') }], modal || document);
+                return showToast(i18n.t('errors.group_required'), 'warning');
+            }
 
             const aclId = modal?.dataset.aclId; // if present, it's edit
 
-            try {
+            await runAction(async () => {
                 if (aclId) {
                     await api.updateConsumerAcl(consumer.id, aclId, group);
                     showToast(i18n.t('consumers.acls.update_success'), 'success');
@@ -441,13 +455,10 @@ export class App {
                     await api.addConsumerAcl(consumer.id, group);
                     showToast(i18n.t('consumers.acls.add_success'), 'success');
                 }
-                loadConsumerAcls(consumer.id);
+                await loadConsumerAcls(consumer.id);
                 this.ui.closeModal('aclModal');
                 (document.getElementById('acl_group') as HTMLInputElement).value = '';
-
-            } catch (e: any) {
-                showToast(e.message, 'error');
-            }
+            }, { button });
         });
 
         document.getElementById('addCredentialBtn')?.addEventListener('click', () => {
@@ -462,17 +473,18 @@ export class App {
             this.ui.openModal('credentialModal');
         });
 
-        document.getElementById('saveCredentialBtn')?.addEventListener('click', async () => {
+        document.getElementById('saveCredentialBtn')?.addEventListener('click', async (event) => {
             const consumer = getCurrentConsumer();
             if (!consumer) return;
 
+            const button = event.currentTarget as HTMLElement;
             const activeTab = document.querySelector('.credential-tabs .tab-btn.active') as HTMLElement;
             const type = activeTab?.dataset.cred || 'basic-auth';
             const data = this.ui.getCredentialFormData(type);
             const modal = document.getElementById('credentialModal');
             const credId = modal?.dataset.credId;
 
-            try {
+            await runAction(async () => {
                 if (credId) {
                     await api.updateConsumerCredential(consumer.id, type, credId, data);
                     showToast(i18n.t('consumers.credentials.update_success'), 'success');
@@ -482,31 +494,28 @@ export class App {
                     showToast(i18n.t('consumers.credentials.add_success'), 'success');
                 }
 
-                loadConsumerCredentials(consumer.id, type, this.ui);
+                await loadConsumerCredentials(consumer.id, type, this.ui);
                 this.ui.closeModal('credentialModal');
-            } catch (e: any) {
-                showToast(e.message, 'error');
-            }
+            }, { button });
         });
 
-        document.getElementById('saveConsumerDetailsBtn')?.addEventListener('click', async () => {
+        document.getElementById('saveConsumerDetailsBtn')?.addEventListener('click', async (event) => {
             const consumer = getCurrentConsumer();
             if (!consumer) return;
 
+            const button = event.currentTarget as HTMLElement;
             const username = (document.getElementById('edit_consumer_username') as HTMLInputElement)?.value;
             const custom_id = (document.getElementById('edit_consumer_custom_id') as HTMLInputElement)?.value;
             const tags = (document.getElementById('edit_consumer_tags') as HTMLInputElement)?.value;
 
-            try {
+            await runAction(async () => {
                 await api.updateConsumer(consumer.id, {
                     username: username || undefined,
                     custom_id: custom_id || undefined,
                     tags: tags ? tags.split(',').map(t => t.trim()) : []
                 });
                 showToast(i18n.t('consumers.update_success'), 'success');
-            } catch (e: any) {
-                showToast(e.message, 'error');
-            }
+            }, { button });
         });
 
         document.getElementById('addConsumerPluginBtn')?.addEventListener('click', () => {
@@ -544,34 +553,43 @@ export class App {
                 });
         });
 
-        document.getElementById('saveSettingsBtn')?.addEventListener('click', async () => {
+        document.getElementById('saveSettingsBtn')?.addEventListener('click', async (event) => {
+            const button = event.currentTarget as HTMLElement;
             const url = (document.getElementById('conf_kong_url') as HTMLInputElement).value;
-            if (!url) return showToast(i18n.t('errors.required'), 'warning');
+            if (!url) {
+                validateRequiredFields([{ id: 'conf_kong_url', message: i18n.t('errors.required') }], document.getElementById('settingsModal') || document);
+                return showToast(i18n.t('errors.required'), 'warning');
+            }
 
-            try {
+            await runAction(async () => {
                 await api.updateConnectionConfig(url);
                 showToast(i18n.t('messages.connection_success'), 'success');
                 this.ui.closeModal('settingsModal');
-            } catch (e: any) {
-                showToast(`${i18n.t('messages.connection_error')}: ${e.message}`, 'error');
-            }
+            }, { button, errorMessage: i18n.t('messages.connection_error') });
         });
 
-        document.getElementById('changePasswordBtn')?.addEventListener('click', async () => {
+        document.getElementById('changePasswordBtn')?.addEventListener('click', async (event) => {
+            const button = event.currentTarget as HTMLElement;
             const current = (document.getElementById('currentPassword') as HTMLInputElement).value;
             const newPass = (document.getElementById('newPassword') as HTMLInputElement).value;
             const confirm = (document.getElementById('confirmPassword') as HTMLInputElement).value;
 
+            if (!validateRequiredFields([
+                { id: 'currentPassword', message: i18n.t('errors.required') },
+                { id: 'newPassword', message: i18n.t('errors.required') },
+                { id: 'confirmPassword', message: i18n.t('errors.required') }
+            ], document.getElementById('settingsModal') || document)) {
+                return showToast(i18n.t('errors.required'), 'warning');
+            }
+
             if (newPass !== confirm) return showToast(i18n.t('auth.passwords_do_not_match'), 'warning');
 
-            try {
+            await runAction(async () => {
                 await auth.changePassword(current, newPass);
                 showToast(i18n.t('auth.change_password_success'), 'success');
                 (document.getElementById('changePasswordForm') as HTMLFormElement).reset();
                 this.ui.closeModal('settingsModal');
-            } catch (e: any) {
-                showToast(e.message, 'error');
-            }
+            }, { button });
         });
 
         document.getElementById('logoutBtn')?.addEventListener('click', () => {
@@ -609,7 +627,7 @@ export class App {
 
         // Credential type tabs
         document.querySelectorAll('.credential-tabs .tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (event) => {
                 const type = (btn as HTMLElement).dataset.cred;
                 const consumer = getCurrentConsumer();
                 if (!type || !consumer) return;
@@ -617,13 +635,15 @@ export class App {
                 document.querySelectorAll('.credential-tabs .tab-btn').forEach(t => t.classList.remove('active'));
                 btn.classList.add('active');
 
-                loadConsumerCredentials(consumer.id, type, this.ui);
+                runAction(() => loadConsumerCredentials(consumer.id, type, this.ui), {
+                    button: event.currentTarget as HTMLElement
+                });
             });
         });
 
         // Back button
-        document.getElementById('backToConsumersBtn')?.addEventListener('click', () => {
-            this.loadConsumersView();
+        document.getElementById('backToConsumersBtn')?.addEventListener('click', (event) => {
+            runAction(() => this.loadConsumersView(), { button: event.currentTarget as HTMLElement });
         });
     }
 }

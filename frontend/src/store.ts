@@ -25,6 +25,8 @@ interface State {
 class Store {
     public state: State;
     private listeners: Function[];
+    public sortKey: string = 'created_at';
+    public sortOrder: 'asc' | 'desc' = 'desc';
 
     constructor() {
         this.state = {
@@ -219,10 +221,20 @@ class Store {
         this.notify();
     }
 
+    setSort(key: string) {
+        if (this.sortKey === key) {
+            this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.sortKey = key;
+            this.sortOrder = (key === 'created_at' || key === 'strip_path') ? 'desc' : 'asc';
+        }
+        this.notify();
+    }
+
     get filteredRoutes() {
         const { search, method, access, hasPlugins } = this.state.filters;
 
-        return this.state.routes.filter(r => {
+        const filtered = this.state.routes.filter(r => {
             const raw = r.raw || r;
 
             if (search) {
@@ -253,6 +265,46 @@ class Store {
             }
 
             return true;
+        });
+
+        return filtered.sort((a, b) => {
+            const rawA = a.raw || a;
+            const rawB = b.raw || b;
+
+            let valA: any;
+            let valB: any;
+
+            switch (this.sortKey) {
+                case 'name':
+                    valA = (rawA.name || rawA.id || '').toLowerCase();
+                    valB = (rawB.name || rawB.id || '').toLowerCase();
+                    break;
+                case 'paths':
+                    valA = (rawA.paths || []).join(', ').toLowerCase();
+                    valB = (rawB.paths || []).join(', ').toLowerCase();
+                    break;
+                case 'hosts':
+                    valA = (rawA.hosts || []).join(', ').toLowerCase();
+                    valB = (rawB.hosts || []).join(', ').toLowerCase();
+                    break;
+                case 'strip_path':
+                    valA = rawA.strip_path !== false ? 1 : 0;
+                    valB = rawB.strip_path !== false ? 1 : 0;
+                    break;
+                case 'source':
+                    valA = (a.source || '').toLowerCase();
+                    valB = (b.source || '').toLowerCase();
+                    break;
+                case 'created_at':
+                default:
+                    valA = rawA.created_at || a.created_at || 0;
+                    valB = rawB.created_at || b.created_at || 0;
+                    break;
+            }
+
+            if (valA < valB) return this.sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return this.sortOrder === 'asc' ? 1 : -1;
+            return 0;
         });
     }
 

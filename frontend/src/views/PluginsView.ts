@@ -6,9 +6,10 @@ import { api } from '../services/api';
 import { i18n } from '../services/i18n';
 import { UI } from '../ui';
 import { store } from '../store';
-import { showToast, setBusy, getPluginIcon } from '../utils';
+import { showFieldError, showToast, setBusy, getPluginIcon, runAction } from '../utils';
 import { confirmAction } from './shared';
 import { refreshRoutes } from './RoutesView';
+import { loadConsumerPlugins } from './ConsumersView';
 
 export async function populatePluginSelect() {
     const select = document.getElementById('pluginSelect') as HTMLSelectElement;
@@ -48,15 +49,19 @@ export async function loadRoutePlugins(ui: UI, route: any) {
 
         ui.renderRoutePluginsList(routePlugins, route, {
             onToggle: async (id: string, enabled: boolean) => {
-                await api.updatePlugin(id, { enabled });
-                await refreshRoutes();
-                await loadRoutePlugins(ui, route);
+                await runAction(async () => {
+                    await api.updatePlugin(id, { enabled });
+                    await refreshRoutes();
+                    await loadRoutePlugins(ui, route);
+                });
             },
             onDelete: async (id: string) => {
                 if (await confirmAction(i18n.t('plugins.delete_confirm'))) {
-                    await api.deletePlugin(id);
-                    await refreshRoutes();
-                    await loadRoutePlugins(ui, route);
+                    await runAction(async () => {
+                        await api.deletePlugin(id);
+                        await refreshRoutes();
+                        await loadRoutePlugins(ui, route);
+                    });
                 }
             },
             onEdit: (plugin: any) => {
@@ -74,13 +79,17 @@ export async function loadServicePlugins(ui: UI, svc: any) {
 
         ui.renderRoutePluginsList(plugins, svc, {
             onToggle: async (id: string, enabled: boolean) => {
-                await api.updatePlugin(id, { enabled });
-                loadServicePlugins(ui, svc);
+                await runAction(async () => {
+                    await api.updatePlugin(id, { enabled });
+                    await loadServicePlugins(ui, svc);
+                });
             },
             onDelete: async (id: string) => {
                 if (await confirmAction(i18n.t('plugins.delete_confirm'))) {
-                    await api.deletePlugin(id);
-                    loadServicePlugins(ui, svc);
+                    await runAction(async () => {
+                        await api.deletePlugin(id);
+                        await loadServicePlugins(ui, svc);
+                    });
                 }
             },
             onEdit: (plugin: any) => {
@@ -99,15 +108,18 @@ export async function handleAddPlugin(ui: UI) {
     if (!modal || !select) return;
 
     const pluginName = select.value;
-    if (!pluginName) return showToast(i18n.t('errors.plugin_required'), 'warning');
+    if (!pluginName) {
+        showFieldError(select, i18n.t('errors.plugin_required'));
+        return showToast(i18n.t('errors.plugin_required'), 'warning');
+    }
 
-    try {
+    await runAction(async () => {
         const schema = await api.getPluginSchema(pluginName);
         openPluginConfigModal(ui, null, schema, pluginName);
-    } catch (e) {
-        console.error(e);
+    }, { button: document.getElementById('addPluginBtn'), onError: (error) => {
+        console.error(error);
         openPluginConfigModal(ui, null, null, pluginName);
-    }
+    } });
 }
 
 export function handleBatchPlugin(ui: UI) {
@@ -119,6 +131,7 @@ export function handleBatchPlugin(ui: UI) {
     if (modal) {
         modal.dataset.mode = 'batch';
         modal.dataset.entityType = 'route';
+        modal.dataset.entityId = '';
     }
     populatePluginSelect();
     const list = document.getElementById('pluginsList');
@@ -156,6 +169,7 @@ export async function handleSavePluginConfig(ui: UI) {
     const modal = document.getElementById('pluginConfigModal');
     if (!modal) return;
 
+    const saveBtn = document.getElementById('savePluginConfigBtn');
     const pluginName = modal.dataset.pluginName;
     const pluginId = modal.dataset.pluginId;
     const entityType = modal.dataset.entityType;
@@ -192,25 +206,30 @@ export async function handleSavePluginConfig(ui: UI) {
 
     // BATCH MODE
     if (mode === 'batch' && !pluginId) {
-        const ids = store.selectedIds;
-        setBusy(modal, true);
-        let success = 0;
-        let errors = 0;
+        await runAction(async () => {
+            const ids = store.selectedIds;
+            setBusy(modal, true);
+            let success = 0;
+            let errors = 0;
 
-        for (const id of ids) {
-            try {
-                await api.createPlugin({ ...payload, route: { id } });
-                success++;
-            } catch (e) {
-                errors++;
+            for (const id of ids) {
+                try {
+                    await api.createPlugin({ ...payload, route: { id } });
+                    success++;
+                } catch (e) {
+                    errors++;
+                }
             }
-        }
 
-        setBusy(modal, false);
-        showToast(i18n.t('plugins.batch_create_success', { count: success }), 'success');
-        ui.closeModal('pluginConfigModal');
-        ui.closeModal('pluginsModal');
-        refreshRoutes();
+            setBusy(modal, false);
+            showToast(i18n.t('plugins.batch_create_success', { count: success }), errors > 0 ? 'warning' : 'success');
+            ui.closeModal('pluginConfigModal');
+            ui.closeModal('pluginsModal');
+            await refreshRoutes();
+        }, { button: saveBtn, onError: (e: any) => {
+            setBusy(modal, false);
+            showToast(e?.message || i18n.t('messages.error'), 'error');
+        } });
         return;
     }
 
@@ -227,7 +246,7 @@ export async function handleSavePluginConfig(ui: UI) {
             forbidden.forEach(k => delete payload.config[k]);
         }
 
-        try {
+        await runAction(async () => {
             await api.createPlugin(payload);
 
             showToast(i18n.t('plugins.create_success'), 'success');
@@ -236,19 +255,16 @@ export async function handleSavePluginConfig(ui: UI) {
             if (entityType === 'route') {
                 await refreshRoutes();
                 const r = store.state.routes.find(x => x.id === entityId);
-                if (r) loadRoutePlugins(ui, r);
+                if (r) await loadRoutePlugins(ui, r);
             } else if (entityType === 'service') {
-                loadServicePlugins(ui, { id: entityId });
+                await loadServicePlugins(ui, { id: entityId });
             } else if (entityType === 'consumer') {
-                import('./ConsumersView').then(m => m.loadConsumerPlugins(entityId));
+                await loadConsumerPlugins(entityId);
             }
-        } catch (e: any) {
-            console.error(e);
-            showToast(e.message, 'error');
-        }
+        }, { button: saveBtn });
     } else {
         // UPDATE
-        try {
+        await runAction(async () => {
             await api.updatePlugin(pluginId, { config });
             showToast(i18n.t('plugins.update_success'), 'success');
             ui.closeModal('pluginConfigModal');
@@ -256,15 +272,13 @@ export async function handleSavePluginConfig(ui: UI) {
             if (entityType === 'route') {
                 await refreshRoutes();
                 const r = store.state.routes.find(x => x.id === entityId);
-                if (r) loadRoutePlugins(ui, r);
+                if (r) await loadRoutePlugins(ui, r);
             } else if (entityType === 'service') {
-                loadServicePlugins(ui, { id: entityId });
+                await loadServicePlugins(ui, { id: entityId });
             } else if (entityType === 'consumer') {
-                import('./ConsumersView').then(m => m.loadConsumerPlugins(entityId));
+                await loadConsumerPlugins(entityId);
             }
-        } catch (e: any) {
-            showToast(e.message, 'error');
-        }
+        }, { button: saveBtn });
     }
 }
 
@@ -379,11 +393,11 @@ export async function handleCopyPlugins(ui: UI) {
                     
                     // Refresh current view
                     if (targetType === 'route') {
-                        refreshRoutes();
+                        await refreshRoutes();
                         const r = store.state.routes.find(x => x.id === targetId);
-                        if (r) loadRoutePlugins(ui, r);
+                        if (r) await loadRoutePlugins(ui, r);
                     } else {
-                        loadServicePlugins(ui, { id: targetId });
+                        await loadServicePlugins(ui, { id: targetId });
                     }
                 }
             } catch (e: any) {
@@ -407,9 +421,10 @@ export function bindPluginCallbacks(ui: UI) {
         if (modal) {
             modal.dataset.entityType = 'route';
             modal.dataset.entityId = route.id;
+            modal.dataset.mode = '';
         }
-        populatePluginSelect();
-        loadRoutePlugins(ui, route);
+        await populatePluginSelect();
+        await loadRoutePlugins(ui, route);
     };
 
     // Service plugins
@@ -419,9 +434,10 @@ export function bindPluginCallbacks(ui: UI) {
         if (modal) {
             modal.dataset.entityType = 'service';
             modal.dataset.entityId = svc.id;
+            modal.dataset.mode = '';
         }
-        populatePluginSelect();
-        loadServicePlugins(ui, svc);
+        await populatePluginSelect();
+        await loadServicePlugins(ui, svc);
     };
 
     // Copy plugins binding

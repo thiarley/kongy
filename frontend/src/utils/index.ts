@@ -43,11 +43,13 @@ export function setBusy(element: HTMLElement | null, isBusy: boolean) {
     if (!element) return;
 
     if (isBusy) {
+        if (element.classList.contains('busy')) return;
+
         element.classList.add('busy', 'disabled', 'opacity-50');
         element.setAttribute('disabled', 'true');
-        element.dataset.originalText = element.innerHTML;
 
         if (element.tagName === 'BUTTON') {
+            element.dataset.originalText = element.innerHTML;
             element.innerHTML = '<span class="spinner"></span> Aguarde...';
         }
 
@@ -56,13 +58,76 @@ export function setBusy(element: HTMLElement | null, isBusy: boolean) {
         element.classList.remove('busy', 'disabled', 'opacity-50');
         element.removeAttribute('disabled');
 
-        if (element.dataset.originalText) {
+        if (element.tagName === 'BUTTON' && element.dataset.originalText) {
             element.innerHTML = element.dataset.originalText;
             delete element.dataset.originalText;
         }
 
         document.body.style.cursor = 'default';
     }
+}
+
+interface RunActionOptions {
+    button?: HTMLElement | null;
+    busyElement?: HTMLElement | null;
+    errorMessage?: string;
+    showError?: boolean;
+    onError?: (error: any) => void;
+}
+
+export async function runAction(action: () => Promise<void> | void, options: RunActionOptions = {}) {
+    const busyElement = options.busyElement || options.button || null;
+    if (busyElement?.classList.contains('busy')) return;
+
+    try {
+        setBusy(busyElement, true);
+        await action();
+    } catch (error: any) {
+        if (options.onError) {
+            options.onError(error);
+        } else if (options.showError !== false) {
+            showToast(options.errorMessage || error?.message || 'Erro ao processar operação', 'error');
+        }
+    } finally {
+        setBusy(busyElement, false);
+    }
+}
+
+export function clearFieldErrors(container: ParentNode = document) {
+    container.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    container.querySelectorAll('.field-error').forEach(el => el.remove());
+}
+
+export function showFieldError(input: HTMLElement | null, message: string) {
+    if (!input) return;
+
+    input.classList.add('is-invalid');
+    const group = input.closest('.form-group') || input.parentElement;
+    if (!group || group.querySelector('.field-error')) return;
+
+    const error = document.createElement('small');
+    error.className = 'field-error';
+    error.textContent = message;
+    group.appendChild(error);
+}
+
+export function validateRequiredFields(fields: Array<{ id: string; message: string }>, container: ParentNode = document) {
+    clearFieldErrors(container);
+    const invalid = fields.filter(field => {
+        const input = document.getElementById(field.id) as HTMLInputElement | HTMLTextAreaElement | null;
+        return !input || !input.value.trim();
+    });
+
+    invalid.forEach(field => {
+        showFieldError(document.getElementById(field.id), field.message);
+    });
+
+    if (invalid.length > 0) {
+        document.getElementById(invalid[0].id)?.focus();
+        return false;
+    }
+
+    return true;
 }
 
 export function setContainerLoading(container: HTMLElement | null, isLoading: boolean) {

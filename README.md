@@ -55,6 +55,13 @@ docker compose up -d
 # Access http://localhost:8081
 ```
 
+If port `8081` is already in use, set another frontend port:
+
+```bash
+FRONTEND_PORT=8082 docker compose up -d
+# Access http://localhost:8082
+```
+
 On first access, you will be redirected to create the administrator user.
 
 ### Local Development

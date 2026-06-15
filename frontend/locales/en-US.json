@@ -56,6 +56,7 @@
         "close": "Close",
         "confirm": "Confirm",
         "back": "Back",
+        "search": "Search",
         "manage_plugins": "Manage Plugins",
         "manage_targets": "Manage Targets",
         "details": "Details",
@@ -118,7 +119,8 @@
         "delete_confirm": "Delete service {name}?",
         "empty_state": "No services found",
         "current": "Current Service",
-        "plugins_title": "Service Plugins"
+        "plugins_title": "Service Plugins",
+        "search_placeholder": "Search service..."
     },
     "routes": {
         "title": "Routes",
@@ -143,6 +145,7 @@
         "select_warning": "Select routes",
         "batch_no_change_warning": "Select at least one field to change",
         "source": "Source",
+        "created_at": "Created at",
         "endpoint_methods": "Endpoint / Methods",
         "tags_plugins": "Tags / Plugins",
         "with_plugins": "with plugins",
@@ -215,6 +218,7 @@
         "target": "Target",
         "weight": "Weight",
         "health": "Health",
+        "search_placeholder": "Search upstream...",
         "add_target_success": "Target added",
         "delete_target_confirm": "Delete target?",
         "empty_state": "No upstreams found",
@@ -229,7 +233,8 @@
         "create_success": "Certificate created",
         "update_success": "Certificate updated",
         "delete_confirm": "Delete certificate?",
-        "empty_state": "No certificates found"
+        "empty_state": "No certificates found",
+        "search_placeholder": "Search certificate..."
     },
     "connection": {
         "title": "Connection",
@@ -243,6 +248,7 @@
     },
     "errors": {
         "required": "Required field",
+        "name_required": "Name is required",
         "invalid_url": "Invalid URL",
         "min_length": "Minimum {min} characters",
         "max_length": "Maximum {max} characters",

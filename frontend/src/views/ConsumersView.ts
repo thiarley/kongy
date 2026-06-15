@@ -5,7 +5,8 @@
 import { api } from '../services/api';
 import { i18n } from '../services/i18n';
 import { UI } from '../ui';
-import { showToast } from '../utils';
+import { store } from '../store';
+import { runAction, showToast, validateRequiredFields } from '../utils';
 import { confirmAction } from './shared';
 
 export interface ConsumersViewCallbacks {
@@ -23,7 +24,9 @@ export async function loadConsumersView(ui: UI, callbacks: ConsumersViewCallback
 
     try {
         const data = await api.getConsumers();
-        ui.renderConsumers(data.data || []);
+        const consumers = data.data || [];
+        store.setConsumers(consumers);
+        ui.renderConsumers(consumers);
     } catch (e: any) {
         showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
     }
@@ -65,25 +68,21 @@ export async function loadConsumerDetails(ui: UI, consumer: any, callbacks: Cons
     // Handle Save Details
     const updateBtn = document.getElementById('updateConsumerBtn');
     if (updateBtn) {
-        updateBtn.onclick = async () => {
+        updateBtn.onclick = () => runAction(async () => {
             const username = (document.getElementById('edit_consumer_username') as HTMLInputElement).value;
             const custom_id = (document.getElementById('edit_consumer_custom_id') as HTMLInputElement).value;
             const tagsRaw = (document.getElementById('edit_consumer_tags') as HTMLInputElement).value;
             const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()) : [];
 
-            try {
-                const updated = await api.updateConsumer(consumer.id, {
-                    username: username || undefined,
-                    custom_id: custom_id || undefined,
-                    tags
-                });
-                currentConsumer = updated;
-                if (nameEl) nameEl.textContent = updated.username || updated.id;
-                showToast(i18n.t('consumers.update_success'), 'success');
-            } catch (e: any) {
-                showToast(e.message, 'error');
-            }
-        };
+            const updated = await api.updateConsumer(consumer.id, {
+                username: username || undefined,
+                custom_id: custom_id || undefined,
+                tags
+            });
+            currentConsumer = updated;
+            if (nameEl) nameEl.textContent = updated.username || updated.id;
+            showToast(i18n.t('consumers.update_success'), 'success');
+        }, { button: updateBtn });
     }
 }
 
@@ -93,6 +92,7 @@ export async function loadConsumerAcls(consumerId: string) {
 
     try {
         const res = await api.getConsumerAcls(consumerId);
+        if (currentConsumer?.id !== consumerId) return;
         const acls = res.data || [];
 
         if (tbody) {
@@ -125,8 +125,10 @@ export async function loadConsumerAcls(consumerId: string) {
                 tbody.querySelectorAll('.acl-delete-btn').forEach((btn: any) => {
                     btn.onclick = async () => {
                         if (await confirmAction(i18n.t('consumers.acls.delete_confirm', { group: btn.dataset.group }))) {
-                            await api.deleteConsumerAcl(consumerId, btn.dataset.id);
-                            loadConsumerAcls(consumerId);
+                            await runAction(async () => {
+                                await api.deleteConsumerAcl(consumerId, btn.dataset.id);
+                                await loadConsumerAcls(consumerId);
+                            }, { button: btn });
                         }
                     };
                 });
@@ -143,6 +145,7 @@ export async function loadConsumerCredentials(consumerId: string, type: string, 
 
     try {
         const res = await api.getConsumerCredentials(consumerId, type);
+        if (currentConsumer?.id !== consumerId) return;
         const creds = res.data || [];
 
         if (tbody) {
@@ -191,8 +194,10 @@ export async function loadConsumerCredentials(consumerId: string, type: string, 
                 tbody.querySelectorAll('.cred-delete-btn').forEach((btn: any) => {
                     btn.onclick = async () => {
                         if (await confirmAction(i18n.t('consumers.credentials.delete_confirm'))) {
-                            await api.deleteConsumerCredential(consumerId, type, btn.dataset.id);
-                            loadConsumerCredentials(consumerId, type, ui);
+                            await runAction(async () => {
+                                await api.deleteConsumerCredential(consumerId, type, btn.dataset.id);
+                                await loadConsumerCredentials(consumerId, type, ui);
+                            }, { button: btn });
                         }
                     };
                 });
@@ -210,6 +215,7 @@ export async function loadConsumerPlugins(consumerId: string) {
 
     try {
         const res = await api.getConsumerPlugins(consumerId);
+        if (currentConsumer?.id !== consumerId) return;
         const plugins = res.data || [];
 
         if (plugins.length === 0) {
@@ -234,22 +240,22 @@ export async function loadConsumerPlugins(consumerId: string) {
             tbody.querySelectorAll('.plugin-toggle-btn').forEach((btn: any) => {
                 btn.onclick = async () => {
                     const enabled = btn.dataset.enabled === 'true';
-                    try {
+                    await runAction(async () => {
                         await api.updatePlugin(btn.dataset.id, { enabled: !enabled });
-                        loadConsumerPlugins(consumerId);
+                        await loadConsumerPlugins(consumerId);
                         showToast(enabled ? i18n.t('plugins.toggle_off') : i18n.t('plugins.toggle_on'), 'success');
-                    } catch (e: any) {
-                        showToast(e.message, 'error');
-                    }
+                    }, { button: btn });
                 };
             });
 
             tbody.querySelectorAll('.plugin-delete-btn').forEach((btn: any) => {
                 btn.onclick = async () => {
                     if (await confirmAction(i18n.t('plugins.delete_confirm'))) {
-                        await api.deletePlugin(btn.dataset.id);
-                        loadConsumerPlugins(consumerId);
-                        showToast(i18n.t('plugins.delete_success'), 'success');
+                        await runAction(async () => {
+                            await api.deletePlugin(btn.dataset.id);
+                            await loadConsumerPlugins(consumerId);
+                            showToast(i18n.t('plugins.delete_success'), 'success');
+                        }, { button: btn });
                     }
                 };
             });
@@ -261,30 +267,32 @@ export async function loadConsumerPlugins(consumerId: string) {
 
 export function handleAddConsumer(ui: UI, callbacks: ConsumersViewCallbacks) {
     ui.openModal('consumerModal');
+    (document.getElementById('consumer_username') as HTMLInputElement).value = '';
+    (document.getElementById('consumer_custom_id') as HTMLInputElement).value = '';
+    (document.getElementById('consumer_tags') as HTMLInputElement).value = '';
 
     const btn = document.getElementById('saveConsumerBtn');
     if (btn) {
-        btn.onclick = async () => {
+        btn.onclick = () => runAction(async () => {
             const username = (document.getElementById('consumer_username') as HTMLInputElement).value;
             const custom_id = (document.getElementById('consumer_custom_id') as HTMLInputElement).value;
             const tags = (document.getElementById('consumer_tags') as HTMLInputElement).value;
 
             if (!username && !custom_id) {
+                validateRequiredFields([
+                    { id: 'consumer_username', message: i18n.t('errors.consumer_id_required') }
+                ], document.getElementById('consumerModal') || document);
                 return showToast(i18n.t('errors.consumer_id_required'), 'warning');
             }
 
-            try {
-                await api.createConsumer({
-                    username: username || undefined,
-                    custom_id: custom_id || undefined,
-                    tags: tags ? tags.split(',').map(t => t.trim()) : []
-                });
-                ui.closeModal('consumerModal');
-                loadConsumersView(ui, callbacks);
-                showToast(i18n.t('consumers.create_success'), 'success');
-            } catch (e: any) {
-                showToast(e.message, 'error');
-            }
-        };
+            await api.createConsumer({
+                username: username || undefined,
+                custom_id: custom_id || undefined,
+                tags: tags ? tags.split(',').map(t => t.trim()) : []
+            });
+            ui.closeModal('consumerModal');
+            await loadConsumersView(ui, callbacks);
+            showToast(i18n.t('consumers.create_success'), 'success');
+        }, { button: btn });
     }
 }

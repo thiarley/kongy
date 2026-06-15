@@ -56,6 +56,7 @@
     "close": "Fechar",
     "confirm": "Confirmar",
     "back": "Voltar",
+    "search": "Pesquisar",
     "manage_plugins": "Gerenciar Plugins",
     "manage_targets": "Gerenciar Targets",
     "details": "Detalhes",
@@ -118,7 +119,8 @@
     "delete_confirm": "Deletar serviço {name}?",
     "empty_state": "Nenhum serviço encontrado",
     "current": "Serviço Atual",
-    "plugins_title": "Plugins do Serviço"
+    "plugins_title": "Plugins do Serviço",
+    "search_placeholder": "Buscar serviço..."
   },
   "routes": {
     "title": "Rotas",
@@ -143,6 +145,7 @@
     "select_warning": "Selecione rotas",
     "batch_no_change_warning": "Selecione pelo menos um campo para alterar",
     "source": "Fonte",
+    "created_at": "Criado em",
     "endpoint_methods": "Endpoint / Métodos",
     "tags_plugins": "Tags / Plugins",
     "with_plugins": "com plugins",
@@ -214,6 +217,7 @@
     "target": "Alvo",
     "weight": "Peso",
     "health": "Saúde",
+    "search_placeholder": "Buscar upstream...",
     "add_target_success": "Target adicionado",
     "delete_target_confirm": "Deletar target?",
     "empty_state": "Nenhum upstream encontrado",
@@ -228,7 +232,8 @@
     "create_success": "Certificado criado",
     "update_success": "Certificado atualizado",
     "delete_confirm": "Deletar certificado?",
-    "empty_state": "Nenhum certificado encontrado"
+    "empty_state": "Nenhum certificado encontrado",
+    "search_placeholder": "Buscar certificado..."
   },
   "connection": {
     "title": "Conexão",
@@ -242,6 +247,7 @@
   },
   "errors": {
     "required": "Campo obrigatório",
+    "name_required": "Nome obrigatório",
     "invalid_url": "URL inválida",
     "min_length": "Mínimo {min} caracteres",
     "max_length": "Máximo {max} caracteres",

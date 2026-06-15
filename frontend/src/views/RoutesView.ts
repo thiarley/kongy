@@ -6,7 +6,7 @@ import { api } from '../services/api';
 import { i18n } from '../services/i18n';
 import { UI } from '../ui';
 import { store } from '../store';
-import { showToast, setBusy, escapeHtml } from '../utils';
+import { showToast, setBusy, escapeHtml, runAction, validateRequiredFields } from '../utils';
 import { confirmAction } from './shared';
 
 export interface RoutesViewCallbacks {
@@ -19,6 +19,8 @@ interface ImportFailure {
     pluginName?: string;
     message: string;
 }
+
+let latestRoutesRefreshId = 0;
 
 function sanitizeExportedPlugin(plugin: any) {
     const { id, created_at, updated_at, route, service, consumer, ...pluginData } = plugin;
@@ -108,10 +110,17 @@ async function showImportPreview(routesList: any[], currentServiceId: string) {
 }
 
 export async function refreshRoutes(excludeIds?: Set<string>) {
+    const refreshId = ++latestRoutesRefreshId;
+
     try {
         store.setLoading(true);
         const serviceId = api.getServiceId();
         const data = serviceId ? await api.getServiceRoutes(serviceId) : await api.getRoutes();
+
+        if (refreshId !== latestRoutesRefreshId || serviceId !== api.getServiceId()) {
+            return;
+        }
+
         let routes = data.data || [];
         
         if (excludeIds && excludeIds.size > 0) {
@@ -123,15 +132,24 @@ export async function refreshRoutes(excludeIds?: Set<string>) {
         // Load all plugins in a few paginated requests, then keep only those for visible routes.
         const routeIds = new Set(routes.map((route: any) => route.id));
         const pluginsResponse = await api.getAllPlugins();
+
+        if (refreshId !== latestRoutesRefreshId || serviceId !== api.getServiceId()) {
+            return;
+        }
+
         const routePlugins = (pluginsResponse.data || []).filter((plugin: any) =>
             plugin.route?.id && routeIds.has(plugin.route.id)
         );
         store.setPlugins(routePlugins);
 
     } catch (e: any) {
-        showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
+        if (refreshId === latestRoutesRefreshId) {
+            showToast(`${i18n.t('messages.error')}: ${e.message}`, 'error');
+        }
     } finally {
-        store.setLoading(false);
+        if (refreshId === latestRoutesRefreshId) {
+            store.setLoading(false);
+        }
     }
 }
 
@@ -139,23 +157,20 @@ export function handleAddRoute(ui: UI) {
     ui.openModal('editModal');
     ui.clearRouteForm();
 
-    const btn = document.getElementById('saveRouteBtn');
+    const btn = document.getElementById('saveRouteBtn') as HTMLElement | null;
     if (btn) {
-        btn.onclick = async () => {
+        btn.onclick = () => runAction(async () => {
             const data = ui.getRouteFormData();
             if (!data.name) {
+                validateRequiredFields([{ id: 'input_name', message: i18n.t('errors.name_required') || i18n.t('errors.required') }], document.getElementById('editModal') || document);
                 return showToast(i18n.t('errors.name_required'), 'warning');
             }
 
-            try {
-                await api.saveRoute(data);
-                ui.closeModal('editModal');
-                await refreshRoutes();
-                showToast(i18n.t('routes.create_success'), 'success');
-            } catch (e: any) {
-                showToast(e.message, 'error');
-            }
-        };
+            await api.saveRoute(data);
+            ui.closeModal('editModal');
+            await refreshRoutes();
+            showToast(i18n.t('routes.create_success'), 'success');
+        }, { button: btn });
     }
 }
 
@@ -343,9 +358,9 @@ export function handleBatchEdit(ui: UI) {
 
     ui.openModal('editModal');
 
-    const btn = document.getElementById('saveRouteBtn');
+    const btn = document.getElementById('saveRouteBtn') as HTMLElement | null;
     if (btn) {
-        btn.onclick = async () => {
+        btn.onclick = () => runAction(async () => {
             const updates: any = {};
             const checks = document.querySelectorAll('.batch-field-check:checked');
 
@@ -374,31 +389,30 @@ export function handleBatchEdit(ui: UI) {
             let successCount = 0;
             let errorCount = 0;
 
-            try {
-                await Promise.all(ids.map(async (id) => {
-                    try {
-                        await api.updateRoute(id, updates);
-                        successCount++;
-                    } catch (e) {
-                        errorCount++;
-                    }
-                }));
-
-                ui.closeModal('editModal');
-                await refreshRoutes();
-
-                if (errorCount === 0) {
-                    showToast(i18n.t('messages.batch_success', { count: successCount }), 'success');
-                } else {
-                    showToast(i18n.t('messages.batch_partial', { success: successCount, errors: errorCount }), 'warning');
+            await Promise.all(ids.map(async (id) => {
+                try {
+                    await api.updateRoute(id, updates);
+                    successCount++;
+                } catch (e) {
+                    errorCount++;
                 }
-            } catch (e: any) {
-                showToast(i18n.t('messages.error'), 'error');
-            } finally {
-                setBusy(document.querySelector('.modal-content'), false);
-                ui.setBatchMode(false);
+            }));
+
+            ui.closeModal('editModal');
+            await refreshRoutes();
+
+            if (errorCount === 0) {
+                showToast(i18n.t('messages.batch_success', { count: successCount }), 'success');
+            } else {
+                showToast(i18n.t('messages.batch_partial', { success: successCount, errors: errorCount }), 'warning');
             }
-        };
+            setBusy(document.querySelector('.modal-content'), false);
+            ui.setBatchMode(false);
+        }, { button: btn, onError: (e: any) => {
+            setBusy(document.querySelector('.modal-content'), false);
+            ui.setBatchMode(false);
+            showToast(e?.message || i18n.t('messages.error'), 'error');
+        } });
     }
 }
 
@@ -409,19 +423,15 @@ export function bindRouteCallbacks(ui: UI) {
         ui.openModal('editModal');
         ui.populateRouteForm(route);
 
-        const btn = document.getElementById('saveRouteBtn');
+        const btn = document.getElementById('saveRouteBtn') as HTMLElement | null;
         if (btn) {
-            btn.onclick = async () => {
+            btn.onclick = () => runAction(async () => {
                 const data = ui.getRouteFormData();
-                try {
-                    await api.updateRoute(route.id, data);
-                    ui.closeModal('editModal');
-                    await refreshRoutes();
-                    showToast(i18n.t('routes.update_success'), 'success');
-                } catch (e: any) {
-                    showToast(e.message, 'error');
-                }
-            };
+                await api.updateRoute(route.id, data);
+                ui.closeModal('editModal');
+                await refreshRoutes();
+                showToast(i18n.t('routes.update_success'), 'success');
+            }, { button: btn });
         }
     };
 
@@ -429,10 +439,12 @@ export function bindRouteCallbacks(ui: UI) {
     ui.triggerDelete = async (route: any) => {
         if (await confirmAction(i18n.t('routes.delete_confirm'))) {
             try {
-                await api.deleteRoute(route.id);
-                store.removeRoute(route.id);
-                await refreshRoutes(new Set([route.id]));
-                showToast(i18n.t('routes.delete_success'), 'success');
+                await runAction(async () => {
+                    await api.deleteRoute(route.id);
+                    store.removeRoute(route.id);
+                    await refreshRoutes(new Set([route.id]));
+                    showToast(i18n.t('routes.delete_success'), 'success');
+                });
             } catch (e: any) {
                 showToast(e.message, 'error');
             }
@@ -445,28 +457,33 @@ export async function handleBatchDelete(ui: UI) {
     if (ids.length === 0) return showToast(i18n.t('routes.select_warning'), 'warning');
 
     if (await confirmAction(i18n.t('routes.delete_multiple_confirm', { count: ids.length }))) {
-        setBusy(document.getElementById('routesTable'), true);
-        let success = 0;
-        let errors = 0;
-        const deletedIds = new Set<string>();
+        await runAction(async () => {
+            setBusy(document.getElementById('routesTable'), true);
+            let success = 0;
+            let errors = 0;
+            const deletedIds = new Set<string>();
 
-        for (const id of ids) {
-            try {
-                await api.deleteRoute(id);
-                deletedIds.add(id);
-                success++;
-            } catch (e) {
-                errors++;
+            for (const id of ids) {
+                try {
+                    await api.deleteRoute(id);
+                    deletedIds.add(id);
+                    success++;
+                } catch (e) {
+                    errors++;
+                }
             }
-        }
 
-        await refreshRoutes(deletedIds);
-        setBusy(document.getElementById('routesTable'), false);
+            await refreshRoutes(deletedIds);
+            setBusy(document.getElementById('routesTable'), false);
 
-        if (errors === 0) {
-            showToast(i18n.t('messages.batch_delete_success', { count: success }), 'success');
-        } else {
-            showToast(i18n.t('messages.batch_partial', { success, errors }), 'warning');
-        }
+            if (errors === 0) {
+                showToast(i18n.t('messages.batch_delete_success', { count: success }), 'success');
+            } else {
+                showToast(i18n.t('messages.batch_partial', { success, errors }), 'warning');
+            }
+        }, { button: document.getElementById('deleteSelectedBtn'), onError: (e: any) => {
+            setBusy(document.getElementById('routesTable'), false);
+            showToast(e?.message || i18n.t('messages.error'), 'error');
+        } });
     }
 }

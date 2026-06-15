@@ -251,6 +251,10 @@
                         </button>
                     </div>
                 </div>
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="serviceSearch" class="search-input" placeholder="Buscar serviço..."
+                        data-i18n-placeholder="services.search_placeholder">
+                </div>
                 <div class="glass-panel" style="width: 100%; flex: 1; padding: 30px; overflow-y: auto;">
                     <div id="serviceList" class="service-list-grid"><!-- Injected --></div>
                     <div id="serviceLoading" class="text-center text-muted hidden" style="margin-top:20px;">
@@ -298,12 +302,31 @@
                         <thead>
                             <tr>
                                 <th style="width: 40px"><input type="checkbox" id="selectAllRoutes"></th>
-                                <th data-i18n="routes.name">Nome / ID</th>
-                                <th data-i18n="routes.endpoint_methods">Endpoint / Métodos</th>
-                                <th class="text-center" data-i18n="routes.hosts">Host</th>
-                                <th class="text-center" data-i18n="routes.strip_path">Strip</th>
+                                <th class="sortable cursor-pointer" data-sort="name">
+                                    <span data-i18n="routes.name">Nome / ID</span>
+                                    <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable cursor-pointer" data-sort="paths">
+                                    <span data-i18n="routes.endpoint_methods">Endpoint / Métodos</span>
+                                    <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable cursor-pointer text-center" data-sort="hosts">
+                                    <span data-i18n="routes.hosts">Host</span>
+                                    <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable cursor-pointer text-center" data-sort="strip_path">
+                                    <span data-i18n="routes.strip_path">Strip</span>
+                                    <span class="sort-indicator"></span>
+                                </th>
                                 <th data-i18n="routes.tags_plugins">Tags / Plugins</th>
-                                <th data-i18n="routes.source">Fonte</th>
+                                <th class="sortable cursor-pointer" data-sort="source">
+                                    <span data-i18n="routes.source">Fonte</span>
+                                    <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable cursor-pointer" data-sort="created_at">
+                                    <span data-i18n="routes.created_at">Criado em</span>
+                                    <span class="sort-indicator"></span>
+                                </th>
                                 <th data-i18n="actions.actions">Ações</th>
                             </tr>
                         </thead>
@@ -488,6 +511,10 @@
                                 data-i18n="upstreams.entity">Upstream</span></button>
                     </div>
                 </div>
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="upstreamSearch" class="search-input" placeholder="Buscar upstream..."
+                        data-i18n-placeholder="upstreams.search_placeholder">
+                </div>
                 <div class="glass-panel table-container" style="flex: 1;">
                     <table class="table" id="upstreamsTable">
                         <thead>
@@ -517,6 +544,10 @@
                                 data-i18n="actions.new">Novo</span> <span
                                 data-i18n="certificates.entity">Certificado</span></button>
                     </div>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="certificateSearch" class="search-input" placeholder="Buscar certificado..."
+                        data-i18n-placeholder="certificates.search_placeholder">
                 </div>
                 <div class="glass-panel table-container" style="flex: 1;">
                     <table class="table" id="certificatesTable">

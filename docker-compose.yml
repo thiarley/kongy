@@ -1,5 +1,3 @@
-version: '3.8'
-
 # =============================================================================
 # Kongy - Kong Gateway Manager
 # Development Environment with Local Kong
@@ -16,7 +14,7 @@ services:
       dockerfile: Dockerfile
       target: dev
     ports:
-      - "8081:8081"
+      - "${FRONTEND_PORT:-8081}:8081"
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/index.html:/app/index.html
@@ -42,7 +40,7 @@ services:
       - KONG_ADMIN_URL=http://kong:8001
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - DEBUG=true
-      - CORS_ORIGINS=["http://localhost:8081", "http://127.0.0.1:8081"]
+      - CORS_ORIGINS=["http://localhost:${FRONTEND_PORT:-8081}", "http://127.0.0.1:${FRONTEND_PORT:-8081}"]
     ports:
       - "8002:8000"
     depends_on:
@@ -67,10 +65,11 @@ services:
     networks:
       - kongy-net
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U kong" ]
+      test: [ "CMD-SHELL", "pg_isready -h 127.0.0.1 -U kong -d kong" ]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   kong-migrations:
     image: kong:3.5
@@ -78,8 +77,10 @@ services:
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-database
+      KONG_PG_PORT: 5432
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: kongpass
+      KONG_PG_DATABASE: kong
     depends_on:
       kong-database:
         condition: service_healthy
@@ -92,8 +93,10 @@ services:
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-database
+      KONG_PG_PORT: 5432
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: kongpass
+      KONG_PG_DATABASE: kong
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
@@ -115,6 +118,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
+      start_period: 20s
     restart: unless-stopped
 
   # ============================================

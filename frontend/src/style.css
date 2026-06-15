@@ -1010,3 +1010,35 @@ input:checked+.toggle-slider:before {
     opacity: 0.7;
     margin-top: 3px;
 }
+
+/* Sortable Table Headers */
+.table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.table th.sortable:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-main);
+}
+
+.sort-indicator {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.8rem;
+    vertical-align: middle;
+    color: var(--primary);
+}
+
+.form-control.is-invalid {
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+
+.field-error {
+    display: block;
+    color: var(--danger);
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
