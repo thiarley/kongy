@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     
     # App
     APP_NAME: str = "Kongy"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = "1.0.2"
     DEBUG: bool = False
     SECRET_KEY: str = "change-me-in-production-use-a-long-random-string"
     
