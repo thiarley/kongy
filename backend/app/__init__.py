@@ -1,2 +1,3 @@
 """Kongy Backend Application"""
-__version__ = "1.0.2"
+from app.config import settings
+__version__ = settings.APP_VERSION
