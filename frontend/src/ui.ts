@@ -1000,6 +1000,92 @@ export class UI {
             return;
         }
 
+        const renderField = (fieldName: string, meta: any, currentPath: string, currentValue: any): string => {
+            const fieldId = `plg_${currentPath.replace(/\./g, '_')}`;
+            const required = meta.required ? '<span class="text-danger">*</span>' : '';
+            const help = meta.description 
+                ? `<small class="text-muted" style="display: block; margin-top: 4px; font-size: 0.75rem;"><i class="ph ph-info"></i> ${escapeHtml(meta.description)}</small>` 
+                : '';
+
+            if (meta.type === 'record') {
+                let recHtml = `<div class="plugin-config-record-group" style="${currentPath.includes('.') ? 'margin-left: 20px; border-left: 2px solid rgba(255,255,255,0.05); padding-left: 10px;' : ''}">`;
+                recHtml += `<label class="fw-bold text-light mb-2" style="display: block; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">${escapeHtml(fieldName)} ${required}</label>`;
+                if (help) recHtml += `<div class="mb-2">${help}</div>`;
+                const recordFields = meta.fields || [];
+                recordFields.forEach((subFieldObj: any) => {
+                    const [subName, subMeta] = Object.entries(subFieldObj)[0] as [string, any] || [null, null];
+                    if (!subName || !subMeta) return;
+                    const subValue = currentValue?.[subName] ?? subMeta.default ?? '';
+                    recHtml += renderField(subName, subMeta, `${currentPath}.${subName}`, subValue);
+                });
+                recHtml += `</div>`;
+                return recHtml;
+            }
+
+            let html = `<div class="plugin-config-group" style="${currentPath.includes('.') ? 'margin-left: 20px; border-left: 2px solid rgba(255,255,255,0.05); padding-left: 10px;' : ''}">`;
+            html += `<label>${escapeHtml(fieldName)} ${required}</label>`;
+
+            if (meta.type === 'boolean') {
+                html += `
+                    <label class="checkbox-label">
+                        <input type="checkbox" class="plugin-config-field" 
+                            id="${fieldId}"
+                            data-field="${currentPath}" 
+                            data-type="boolean"
+                            ${currentValue ? 'checked' : ''}>
+                        ${meta.description || i18n.t('plugins.enabled') || 'Ativo'}
+                    </label>
+                `;
+            } else if (meta.type === 'number' || meta.type === 'integer') {
+                html += `
+                    <input type="number" class="form-control plugin-config-field" 
+                        id="${fieldId}"
+                        data-field="${currentPath}" 
+                        data-type="number"
+                        value="${currentValue}">
+                    ${help}
+                `;
+            } else if (meta.type === 'array' || meta.type === 'set') {
+                const elemType = meta.elements?.type || 'string';
+                html += `
+                    <input type="text" class="form-control plugin-config-field" 
+                        id="${fieldId}"
+                        data-field="${currentPath}" 
+                        data-type="${meta.type}"
+                        data-element-type="${elemType}"
+                        value="${Array.isArray(currentValue) ? currentValue.join(', ') : currentValue}"
+                        placeholder="valor1, valor2...">
+                    <small class="text-muted" style="display: block; margin-top: 4px; font-size: 0.75rem;">
+                        <i class="ph ph-info"></i> ${i18n.t('plugins.list_hint') || 'Separe os valores por vírgula para campos de lista (array/set).'}
+                    </small>
+                    ${help}
+                `;
+            } else if (meta.one_of) {
+                const options = meta.one_of.map((o: any) =>
+                    `<option value="${o}" ${o === currentValue ? 'selected' : ''}>${o}</option>`
+                ).join('');
+                html += `
+                    <select class="form-control plugin-config-field" 
+                        id="${fieldId}"
+                        data-field="${currentPath}"
+                        data-type="select">
+                        ${options}
+                    </select>
+                    ${help}
+                `;
+            } else {
+                html += `
+                    <input type="text" class="form-control plugin-config-field" 
+                        id="${fieldId}"
+                        data-field="${currentPath}" 
+                        value="${escapeHtml(currentValue)}">
+                    ${help}
+                `;
+            }
+            html += `</div>`;
+            return html;
+        };
+
         let html = '';
         const configFields = schema.fields.find((f: any) => f.config)?.config?.fields || schema.fields || [];
 
@@ -1010,47 +1096,7 @@ export class UI {
             if (['consumer', 'route', 'service', 'protocols', 'enabled', 'id', 'created_at', 'run_on', 'ordering'].includes(fieldName)) return;
 
             const currentValue = plugin?.config?.[fieldName] ?? meta.default ?? '';
-            const required = meta.required ? '<span class="text-danger">*</span>' : '';
-
-            html += `<div class="plugin-config-group">`;
-            html += `<label>${escapeHtml(fieldName)} ${required}</label>`;
-
-            if (meta.type === 'boolean') {
-                html += `
-                    <label class="checkbox-label">
-                        <input type="checkbox" class="plugin-config-field" 
-                            data-field="${fieldName}" 
-                            data-type="boolean"
-                            ${currentValue ? 'checked' : ''}>
-                        ${meta.description || i18n.t('plugins.enabled')}
-                    </label>
-                `;
-            } else if (meta.type === 'number' || meta.type === 'integer') {
-                html += `
-                    <input type="number" class="form-control plugin-config-field" 
-                        data-field="${fieldName}" 
-                        data-type="number"
-                        value="${currentValue}">
-                `;
-            } else if (meta.type === 'array' || meta.type === 'set') {
-                html += `
-                    <input type="text" class="form-control plugin-config-field" 
-                        data-field="${fieldName}" 
-                        data-type="${meta.type}"
-                        value="${Array.isArray(currentValue) ? currentValue.join(', ') : currentValue}"
-                        placeholder="valor1, valor2...">
-                    <small class="text-muted" style="display: block; margin-top: 4px; font-size: 0.75rem;">
-                        <i class="ph ph-info"></i> ${i18n.t('plugins.list_hint') || 'Separe os valores por vírgula'}
-                    </small>
-                `;
-            } else {
-                html += `
-                    <input type="text" class="form-control plugin-config-field" 
-                        data-field="${fieldName}" 
-                        value="${escapeHtml(currentValue)}">
-                `;
-            }
-            html += `</div>`;
+            html += renderField(fieldName, meta, fieldName, currentValue);
         });
 
         container.innerHTML = html;

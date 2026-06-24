@@ -182,10 +182,39 @@ export async function handleSavePluginConfig(ui: UI) {
     modal.querySelectorAll('.plugin-config-field').forEach((input: any) => {
         const field = input.dataset.field;
         const type = input.dataset.type;
-        if (type === 'boolean') config[field] = input.checked;
-        else if (type === 'number') config[field] = parseFloat(input.value) || 0;
-        else if (type === 'array' || type === 'set') config[field] = input.value ? input.value.split(',').map((s: string) => s.trim()) : [];
-        else config[field] = input.value;
+        let value: any;
+
+        if (type === 'boolean') {
+            value = input.checked;
+        } else if (type === 'number') {
+            value = parseFloat(input.value) || 0;
+        } else if (type === 'array' || type === 'set') {
+            const elementType = input.dataset.elementType;
+            const rawItems = input.value ? input.value.split(',').map((s: string) => s.trim()) : [];
+            if (elementType === 'integer' || elementType === 'number') {
+                value = rawItems.map((s: string) => parseInt(s, 10)).filter((n: any) => !isNaN(n));
+            } else {
+                value = rawItems;
+            }
+        } else {
+            value = input.value;
+        }
+
+        // Set value in config, supporting nested paths (dot notation)
+        if (field.includes('.')) {
+            const parts = field.split('.');
+            let current = config;
+            for (let i = 0; i < parts.length - 1; i++) {
+                const part = parts[i];
+                if (!current[part]) {
+                    current[part] = {};
+                }
+                current = current[part];
+            }
+            current[parts[parts.length - 1]] = value;
+        } else {
+            config[field] = value;
+        }
     });
 
     // JSON Blob fallback

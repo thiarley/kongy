@@ -1042,3 +1042,12 @@ input:checked+.toggle-slider:before {
     font-size: 0.75rem;
     margin-top: 4px;
 }
+
+.plugin-config-record-group {
+    margin-bottom: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+}
+
